@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
         const bool knulli_buttons = controller_layout && std::string(controller_layout) == "knulli";
         for (int i = 1; i < argc; ++i) {
             const std::string argument = argv[i];
-            if (argument == "--version") { std::cout << "0.1.0\n"; return 0; }
+            if (argument == "--version") { std::cout << "0.1.1\n"; return 0; }
             else if (argument == "--demo") demo = true;
             else if (argument == "--windowed") windowed = true;
             else if (argument == "--assets" && i + 1 < argc) assets = argv[++i];
@@ -323,7 +323,7 @@ int main(int argc, char** argv) {
                 }
                 screen.box({0, 0, canvas_width, 480}, {12, 22, 30, 255});
                 screen.text("RANDOM GAME PICKER", 28, 20, canvas_width - 56, white, true);
-                screen.text(demo ? "DEMO / NO LAUNCH" : "v0.1.0", 28, 61, canvas_width - 56, accent);
+                screen.text(demo ? "DEMO / NO LAUNCH" : "v0.1.1", 28, 61, canvas_width - 56, accent);
                 if (!preview) {
                     const std::vector<std::string> rows{
                         "System:  " + systems[system_index].second,

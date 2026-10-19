@@ -1,4 +1,4 @@
-# Installation and testing — 0.1.0
+# Installation and testing — 0.1.1
 
 ## Requirements and scope
 
@@ -6,7 +6,7 @@ This build targets TrimUI Smart Pro (1280×720) and MagicX Zero 28 (640×480). O
 
 Runtime reads ES system configurations, `gamelist.xml` artwork paths, and the running ES catalogue through local `127.0.0.1:1234` HTTP. The local API must be available while a Port runs. Public Web Access and Internet access are not required. No DNS, redirects, downloads, telemetry, accounts, or non-loopback endpoints are used. The App Store manifest declares network use because loopback sockets are still network API use.
 
-This is the first stable release of the existing feature set, following the owner's TSP retest. It does not close the plan's full M0/M3 device gates. ES must queue the submitted game and process it after the Port's wrapper/configgen exits. No fallback invokes emulator binaries or nests configgen.
+Version 0.1.1 adds selector-first startup and preserves saved filters before discovery. Host fixtures and AArch64 ABI checks cover this version; the earlier TSP report does not verify this new flow. It does not close the plan's full M0/M3 device gates. ES must queue the submitted game and process it after the Port's wrapper/configgen exits. No fallback invokes emulator binaries or nests configgen.
 
 ## Install
 
@@ -18,7 +18,7 @@ The launcher resolves its own directory, inherits KNULLI's SDL mappings, and wri
 
 ## Controls
 
-### Source `main` — unreleased selector-first flow
+### Version `0.1.1` — selector-first flow
 
 After discovery, the selector shows a random game using your saved system and favorites filters. Startup does not launch a game. Press A once to play, X to reroll, or Y to open the existing settings/filters screen. If the library or filters have no eligible games, Play is unavailable; Y still opens settings so you can change filters or rescan.
 
@@ -28,7 +28,7 @@ After discovery, the selector shows a random game using your saved system and fa
 - B from the selector returns to settings; B from settings quits. Start still quits globally.
 - The saved system and favorites values are applied before the first selection and retained on exit. Recent exclusion remains session-only.
 
-This change is source-only. Retest first-press Play, Y settings/rescan, B back/quit, and saved filters on each handheld before a later release. The published `0.1.0` package and App Store entry are unchanged.
+Retest first-press Play, Y settings/rescan, B back/quit, and saved filters on each handheld. Install the complete `0.1.1` archive and preserve `state`; do not replace just the binary. The earlier `0.1.0` assets remain unchanged.
 
 ### Published `0.1.0` — filters-first flow
 

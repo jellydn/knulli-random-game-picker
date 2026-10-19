@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    tags: [v0.1.0]
+    tags: [v0.1.1]
 
 permissions:
   contents: read
@@ -59,4 +59,4 @@ jobs:
         run: |
           gh release create "$TAG" release/* evidence/*.png --verify-tag --latest \
             --title "Random Game Picker $TAG" \
-            --notes 'First stable release of the current feature set. The owner confirmed the corrected alpha.2 works on TrimUI Smart Pro. Includes system/favorites filters, random selection, scraped artwork and KNULLI-compatible controller bindings and ES launch handoff. Update the complete package, including RandomGamePicker.sh. Requires aarch64 glibc 2.36+, SDL2/image/ttf and local ES HTTP. MagicX Zero 28 and the full launch/return/performance matrix remain unverified. Persistent library caching and Surprise Mode are not included; this is not completion of the full PRD. Read docs/testing.md for scope and limits.'
+            --notes 'Opens directly on a randomly selected game after discovery, using saved system/favorites filters. Press A to play, X to reroll, or Y for settings; Y inside settings rescans. Fixes the saved system being reset before discovery. Retains KNULLI/Xbox controller layouts, B back/quit, Start quit, and single-submit ES handoff. Update the complete package, including RandomGamePicker.sh, and preserve state. Requires aarch64 glibc 2.36+, SDL2/image/ttf and local ES HTTP. Host/controller fixtures and AArch64 ABI checks cover this version; the earlier TSP report does not verify v0.1.1. Retest on both handhelds. MagicX and the full launch/return/performance matrix remain unverified. Persistent library caching and Surprise Mode are not included. Read docs/testing.md for scope and limits.'
