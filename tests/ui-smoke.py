@@ -87,6 +87,8 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
                 subprocess.run(['convert', str(roms / 'art.png'), str(image)], check=True)
                 gamelist = roms / 'gamelist.xml'
                 gamelist.write_text(gamelist.read_text().replace('art.png', 'art.jpg'))
+            # Each width starts from the same filter state, not the prior run's saved settings.
+            (root / 'state/settings.json').unlink(missing_ok=True)
             process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
             window = ''
             for _ in range(100):
@@ -101,7 +103,15 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
                 subprocess.run(['xdotool', 'key', '--window', window, name], env=environment, check=True, stderr=subprocess.DEVNULL)
                 time.sleep(0.1)
             def capture(state):
-                subprocess.run(['import', '-display', environment['DISPLAY'], '-window', window, str(captures / f'{state}-{size}.png')], check=True)
+                path = captures / f'{state}-{size}.png'
+                for _ in range(100):
+                    subprocess.run(['import', '-display', environment['DISPLAY'], '-window', window, str(path)], check=True)
+                    colors = subprocess.check_output(['identify', '-format', '%k', str(path)], text=True)
+                    if int(colors) > 16:
+                        return
+                    assert process.poll() is None, 'UI exited before rendering'
+                    time.sleep(0.05)
+                raise AssertionError('UI capture remained blank')
             time.sleep(0.3)
             capture('filters')
             key('Return')
