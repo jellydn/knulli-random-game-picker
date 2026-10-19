@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# shellcheck disable=SC1091
+if [[ "$(. /etc/os-release; echo "$ID:$VERSION_ID")" != debian:12 ]]; then
+  echo 'Use Debian Bookworm for the release ABI, not an arbitrary host sysroot.' >&2
+  exit 1
+fi
+elevate=()
+if ((EUID != 0)); then elevate=(sudo); fi
+"${elevate[@]}" dpkg --add-architecture arm64
+"${elevate[@]}" apt-get update -qq
+"${elevate[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+  g++-aarch64-linux-gnu cmake ninja-build pkg-config libpugixml-dev:arm64 \
+  libsdl2-dev:arm64 libsdl2-image-dev:arm64 libsdl2-ttf-dev:arm64 \
+  nlohmann-json3-dev fonts-dejavu-core python3 zip file
+
+cmake -S . -B build/aarch64 -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_TOOLCHAIN_FILE=cmake/aarch64-linux-gnu.cmake -DBUILD_TESTING=OFF \
+  -DCMAKE_EXE_LINKER_FLAGS='-static-libstdc++ -static-libgcc'
+cmake --build build/aarch64 --parallel 2
+aarch64-linux-gnu-strip build/aarch64/random-game-picker
+./scripts/package-device

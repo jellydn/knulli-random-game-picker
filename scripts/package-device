@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+version=0.1.0-alpha.1
+output=build/release
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+mkdir -p "$output" "$stage/assets" "$stage/licenses"
+cp build/aarch64/random-game-picker "$stage/"
+cp packaging/RandomGamePicker.sh LICENSE THIRD_PARTY.md "$stage/"
+cp docs/testing.md "$stage/README.md"
+cp build/aarch64/assets/DejaVuSans.ttf "$stage/assets/"
+for package in fonts-dejavu-core libpugixml-dev nlohmann-json3-dev libstdc++6; do
+  cp "/usr/share/doc/$package/copyright" "$stage/licenses/$package.txt"
+done
+chmod 755 "$stage/random-game-picker" "$stage/RandomGamePicker.sh"
+file "$stage/random-game-picker" >"$output/abi.txt"
+aarch64-linux-gnu-readelf -l -d --version-info "$stage/random-game-picker" >>"$output/abi.txt"
+/usr/bin/python3 - "$stage" "$output" "$version" <<'PY'
+from pathlib import Path
+import hashlib, json, re, stat, sys, zipfile
+stage, output, version = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
+abi = (output / 'abi.txt').read_text()
+assert 'ARM aarch64' in abi and '/lib/ld-linux-aarch64.so.1' in abi
+needed = re.findall(r'Shared library: \[([^]]+)\]', abi)
+allowed = {'libSDL2-2.0.so.0', 'libSDL2_image-2.0.so.0', 'libSDL2_ttf-2.0.so.0', 'libc.so.6', 'libm.so.6', 'ld-linux-aarch64.so.1'}
+assert set(needed) <= allowed, needed
+floor = max(set(re.findall(r'Name: GLIBC_([0-9.]+)', abi)), key=lambda s: tuple(map(int, s.split('.'))))
+assert tuple(map(int, floor.split('.'))) <= (2, 36), floor
+archive = output / f'random-game-picker-{version}-knulli-aarch64.zip'
+files = sorted(p for p in stage.rglob('*') if p.is_file())
+with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
+    for p in files:
+        info = zipfile.ZipInfo(p.relative_to(stage).as_posix(), (2026, 1, 1, 0, 0, 0))
+        info.create_system = 3
+        mode = 0o755 if p.name in {'RandomGamePicker.sh', 'random-game-picker'} else 0o644
+        info.external_attr = (stat.S_IFREG | mode) << 16
+        z.writestr(info, p.read_bytes(), compress_type=zipfile.ZIP_DEFLATED)
+digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+(output / 'SHA256SUMS.txt').write_text(f'{digest}  {archive.name}\n')
+(output / 'archive-inventory.txt').write_text('\n'.join(f'{p.relative_to(stage)} {p.stat().st_size}' for p in files) + '\n')
+(output / 'artifact.json').write_text(json.dumps({'version': version, 'asset': archive.name, 'sha256': digest,
+    'size': archive.stat().st_size, 'installed_size': sum(p.stat().st_size for p in files),
+    'minimum_glibc': floor, 'needed': needed}, indent=2) + '\n')
+print((output / 'artifact.json').read_text())
+PY

@@ -4,8 +4,9 @@ set -euo pipefail
 root="$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")"
 pushd "$root" >/dev/null
 
-bash -n .agents/setup scripts/check
-shellcheck .agents/setup scripts/check
+bash -n .agents/setup scripts/check scripts/build-device scripts/package-device
+sh -n packaging/RandomGamePicker.sh
+shellcheck .agents/setup scripts/check scripts/build-device scripts/package-device packaging/RandomGamePicker.sh
 /usr/bin/python3 scripts/check-docs.py
 
 temporary="$(mktemp -d)"
@@ -40,4 +41,7 @@ c++ -std=c++17 -Wall -Wextra -Werror "$temporary/dependencies.cpp" \
   -o "$temporary/dependencies"
 "$temporary/dependencies"
 echo 'PASS: C++17 host dependency compile/link/load probe (no display or hardware test).'
+cmake -S . -B build/host -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/host --parallel 2
+ctest --test-dir build/host --output-on-failure
 popd >/dev/null

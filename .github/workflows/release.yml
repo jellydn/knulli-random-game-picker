@@ -1,0 +1,62 @@
+name: release
+
+on:
+  push:
+    tags: [v0.1.0-alpha.1]
+
+permissions:
+  contents: read
+
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - run: ./.agents/setup
+      - run: ./scripts/check
+      - run: |
+          sudo apt-get install -y --no-install-recommends xvfb xdotool imagemagick
+          python3 tests/ui-smoke.py build/host/random-game-picker build/ui-smoke
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ui-evidence
+          path: build/ui-smoke/
+  device:
+    runs-on: ubuntu-24.04
+    container: debian:bookworm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - run: ./scripts/build-device
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-package
+          path: build/release/
+  publish:
+    needs: [host, device]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: release-package
+          path: release
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: ui-evidence
+          path: evidence
+      - name: Publish the tested bytes as a prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" release/* evidence/*.png --verify-tag --prerelease \
+            --title "Random Game Picker $TAG (experimental device test)" \
+            --notes 'First experimental test build, not verified on a handheld. Requires aarch64 glibc 2.36+, SDL2, SDL2_image and SDL2_ttf. Uses local EmulationStation HTTP only. Launch handoff, physical button labels and performance need real-device testing. Persistent library caching and Surprise Mode are not included. Read docs/testing.md before testing. No emulator commands or ROM roots are hardcoded.'
