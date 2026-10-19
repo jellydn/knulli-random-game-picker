@@ -2,11 +2,11 @@
 
 A C++17 and SDL2 application that selects games from an existing KNULLI library. Target devices are the TrimUI Smart Pro and MagicX Zero 28.
 
-**Status: experimental `0.1.0-alpha.2`, for owner-authorized device testing.** This fixes the reversed face-button actions reported on TrimUI Smart Pro in alpha.1; hardware retest is needed. No handheld has passed the full verification matrix. Desktop tests and ELF inspection do not establish real KNULLI launch compatibility. Do not treat this as the completed PRD MVP.
+**Status: stable `0.1.0`, the first stable release of the current feature set.** The owner confirmed that the corrected alpha.2 works on TrimUI Smart Pro. MagicX Zero 28 and the full hardware launch/return/performance matrix remain unverified. This release does not complete the full PRD MVP.
 
-The first alpha includes system/favorites filters, uniform random selection, preview of existing PNG/JPEG scraped artwork, reroll, session recent exclusion, controller navigation, and an experimental single-submit ES launch handoff. It reads system configurations and gamelists, reconciles with the running ES catalogue, and never builds an emulator command or guesses a ROM directory.
+This release includes system/favorites filters, uniform random selection, preview of existing PNG/JPEG scraped artwork, reroll, session recent exclusion, controller navigation, and a single-submit ES launch handoff. It reads system configurations and gamelists, reconciles with the running ES catalogue, and never builds an emulator command or guesses a ROM directory.
 
-- [Download prereleases](https://github.com/jellydn/knulli-random-game-picker/releases).
+- [Download releases](https://github.com/jellydn/knulli-random-game-picker/releases).
 - [Installation and testing](docs/testing.md): requirements, controls, logs, known limits, and the hardware report checklist.
 - [Development setup and CI](docs/development.md): host build/tests and AArch64 packaging.
 

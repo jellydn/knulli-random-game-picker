@@ -1,12 +1,12 @@
-# Experimental device test — 0.1.0-alpha.2
+# Installation and testing — 0.1.0
 
 ## Requirements and scope
 
-This build is for the owner's requested test on TrimUI Smart Pro (1280×720) and MagicX Zero 28 (640×480). **Neither device is verified.** It requires KNULLI, aarch64 glibc **2.36 or later**, and the firmware's SDL2, SDL2_image and SDL2_ttf. The package does not replace system libraries. Older firmware must be blocked, not bypassed.
+This build targets TrimUI Smart Pro (1280×720) and MagicX Zero 28 (640×480). On 2026-10-19 the owner confirmed that alpha.2 works on TSP after the face-button correction and requested this stable release. Exact firmware details and the full matrix below were not supplied; MagicX remains unverified. It requires KNULLI, aarch64 glibc **2.36 or later**, and the firmware's SDL2, SDL2_image and SDL2_ttf. The package does not replace system libraries. Older firmware must be blocked, not bypassed.
 
 Runtime reads ES system configurations, `gamelist.xml` artwork paths, and the running ES catalogue through local `127.0.0.1:1234` HTTP. The local API must be available while a Port runs. Public Web Access and Internet access are not required. No DNS, redirects, downloads, telemetry, accounts, or non-loopback endpoints are used. The App Store manifest declares network use because loopback sockets are still network API use.
 
-The owner authorized an experimental first release for hardware testing before the plan's M0 device gate can pass. This is a test vehicle, not evidence that M0/M3 passed. The launch mechanism remains the main unknown: ES must queue the submitted game and process it after the Port's wrapper/configgen exits. No fallback invokes emulator binaries or nests configgen.
+This is the first stable release of the existing feature set, following the owner's TSP retest. It does not close the plan's full M0/M3 device gates. ES must queue the submitted game and process it after the Port's wrapper/configgen exits. No fallback invokes emulator binaries or nests configgen.
 
 ## Install
 
@@ -34,11 +34,11 @@ Play rechecks the full live catalogue, closes SDL/input, submits the exact path 
 
 ## Known limits, not completed MVP claims
 
-- The owner reported the alpha.1 button mismatch on TSP; alpha.2 still needs a hardware retest. No completed launch/return matrix, configured-emulator success rate, Quick Resume/history proof, or cached-startup/performance measurements yet.
+- The owner confirmed that the corrected alpha.2 works on TSP. No completed launch/return matrix, configured-emulator success rate, Quick Resume/history proof, or cached-startup/performance measurements yet; MagicX remains unverified.
 - No persistent game-index cache. A background ES/config/XML read runs on startup/rescan and before Play. Selection uses an in-memory flat pool; artwork decodes synchronously for the selected game. The plan's M2 budgets are not claimed.
 - Recent exclusion is session-only and optional; it never silently relaxes an empty pool. Reset recent selections to continue.
 - Favorites come from live ES metadata. Artwork comes from gamelist PNG/JPEG files capped at 8 MiB and 2048×2048; other/oversized/missing art uses a fallback.
-- No Surprise Mode in this alpha. No automatic system rescans, ES metadata writes, emulator selector, downloads, or self-updater.
+- No Surprise Mode in this release. No automatic system rescans, ES metadata writes, emulator selector, downloads, or self-updater.
 - Ports/virtual collections are excluded from selection; ambiguous paths shared by real systems are excluded to prevent multiple ES launches. Only games already loaded by ES are eligible.
 - The HTTP client expects Content-Length responses from the inspected ES API and fails closed on unsupported transfer encodings.
 

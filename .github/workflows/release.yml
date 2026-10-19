@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    tags: [v0.1.0-alpha.2]
+    tags: [v0.1.0]
 
 permissions:
   contents: read
@@ -51,12 +51,12 @@ jobs:
         with:
           name: ui-evidence
           path: evidence
-      - name: Publish the tested bytes as a prerelease
+      - name: Publish the tested bytes as a stable release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" release/* evidence/*.png --verify-tag --prerelease \
-            --title "Random Game Picker $TAG (experimental device test)" \
-            --notes 'Fixes reversed A/B and X/Y actions reported on TrimUI Smart Pro: translate default KNULLI Ports SDL bindings back to ES labels, while respecting the Ports Xbox-layout flag. Synthetic SDL controller tests cover A pick/play, B back, X reroll and Y rescan in both modes; hardware retest is still needed. Update the complete package, including RandomGamePicker.sh. Requires aarch64 glibc 2.36+, SDL2/image/ttf and local ES HTTP. Launch handoff and performance remain experimental. Persistent library caching and Surprise Mode are not included. Read docs/testing.md before testing.'
+          gh release create "$TAG" release/* evidence/*.png --verify-tag --latest \
+            --title "Random Game Picker $TAG" \
+            --notes 'First stable release of the current feature set. The owner confirmed the corrected alpha.2 works on TrimUI Smart Pro. Includes system/favorites filters, random selection, scraped artwork and KNULLI-compatible controller bindings and ES launch handoff. Update the complete package, including RandomGamePicker.sh. Requires aarch64 glibc 2.36+, SDL2/image/ttf and local ES HTTP. MagicX Zero 28 and the full launch/return/performance matrix remain unverified. Persistent library caching and Surprise Mode are not included; this is not completion of the full PRD. Read docs/testing.md for scope and limits.'
