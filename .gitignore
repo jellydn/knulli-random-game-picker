@@ -1,0 +1,4 @@
+/.amp/portals/
+/build/
+__pycache__/
+*.pyc

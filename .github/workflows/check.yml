@@ -1,0 +1,27 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  planning-and-toolchain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7; matches knulli-app-store
+        with:
+          persist-credentials: false
+      - name: Prepare host toolchain
+        run: ./.agents/setup
+      - name: Check planning documents, shell scripts, and host dependencies
+        run: ./scripts/check
