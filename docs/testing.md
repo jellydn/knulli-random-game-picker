@@ -18,15 +18,31 @@ The launcher resolves its own directory, inherits KNULLI's SDL mappings, and wri
 
 ## Controls
 
+### Source `main` — unreleased selector-first flow
+
+After discovery, the selector shows a random game using your saved system and favorites filters. Startup does not launch a game. Press A once to play, X to reroll, or Y to open the existing settings/filters screen. If the library or filters have no eligible games, Play is unavailable; Y still opens settings so you can change filters or rescan.
+
+- In settings, D-pad up/down chooses a row; left/right on System changes the console.
+- A on System picks a game and returns to the selector. A on other rows toggles or resets that setting.
+- Y inside settings rescans; opening settings alone does not scan.
+- B from the selector returns to settings; B from settings quits. Start still quits globally.
+- The saved system and favorites values are applied before the first selection and retained on exit. Recent exclusion remains session-only.
+
+This change is source-only. Retest first-press Play, Y settings/rescan, B back/quit, and saved filters on each handheld before a later release. The published `0.1.0` package and App Store entry are unchanged.
+
+### Published `0.1.0` — filters-first flow
+
 - D-pad up/down: choose a filter row.
 - Left/right on System: cycle All Systems or one console.
 - A on System: select a game. A on other rows: toggle/reset.
 - Preview A: submit Play; X: reroll; B: return to filters.
 - Y: rescan; B from filters or Start: quit.
 
+### Controller mapping and launch safety
+
 Alpha.1 reversed A/B and X/Y on the owner's TrimUI Smart Pro. Alpha.2 translates KNULLI's default generated SDL mapping back to ES button labels. The launcher reads `/var/run/ports_xbox_layout.flag`, the same mode flag used by KNULLI configgen, and leaves the non-swapped Xbox-layout mapping unchanged. Update **both the launcher and binary**, not just the binary. Store updates preserve `state`; manual updates must also leave it intact.
 
-Buttons still use the inherited SDL GameController mapping (also loading KNULLI's `/tmp/gamecontrollerdb.txt`); no raw device button indices are hardcoded. The session log reports the selected layout. The labels describe ES inputs, so custom ES mappings or differently labelled external pads still need testing. Direct desktop execution without the Port launcher retains standard SDL labels; `PICKER_CONTROLLER_LAYOUT=knulli` selects the default KNULLI translation for fixture testing. Report physical A pick/play, B back, X reroll and Y rescan separately. Do not modify system mappings blindly.
+Buttons still use the inherited SDL GameController mapping (also loading KNULLI's `/tmp/gamecontrollerdb.txt`); no raw device button indices are hardcoded. The session log reports the selected layout. The labels describe ES inputs, so custom ES mappings or differently labelled external pads still need testing. Direct desktop execution without the Port launcher retains standard SDL labels; `PICKER_CONTROLLER_LAYOUT=knulli` selects the default KNULLI translation for fixture testing. Report physical A pick/play, B back, X reroll and Y settings/rescan separately, and record which build you tested. Do not modify system mappings blindly.
 
 Source contract: KNULLI [controller.py](https://github.com/knulli-cfw/knulli-linux/blob/knulli-main/package/system/knulli-configgen/configgen/configgen/controller.py) maps default ES `a/b/x/y` to SDL `b/a/y/x`; its Xbox-layout mode maps names directly. The [Ports hook](https://github.com/knulli-cfw/knulli-linux/blob/knulli-main/board/fsoverlay/usr/share/knulli/configgen/scripts/ports_hooks.sh) owns the layout flag. This is a shared Ports policy, not a guessed TSP button-number table.
 

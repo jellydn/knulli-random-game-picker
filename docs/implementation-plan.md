@@ -180,9 +180,9 @@ Cold scans show progress, permit Back/cancel, and do not promise a 3-second cold
 
 ## 7. UI, input, and device compatibility
 
-States: Loading → Filters → Preview → Submitting → Exit. Empty library, empty filter, stale/unavailable launch, malformed metadata, and no controller are recoverable states, not modal dead ends. Background rebuilds keep focus stable.
+States: Loading → Selector/Preview → Submitting → Exit; Y opens Settings/Filters from the selector. This follows the owner's 2026-10-19 flow update, superseding the original filters-first baseline. Empty library, empty filter, stale/unavailable launch, malformed metadata, and no controller are recoverable states, not modal dead ends. Background rebuilds keep focus stable.
 
-- Filters starts on All Systems with “A: Surprise Me.” Preview has “A: Play, X: Reroll, B: Filters.” B from Filters exits; B never cancels a request already submitted. No extra launch confirmation in normal preview. Surprise Mode is explicit and off by default.
+- After discovery, select a game using saved system/favorites filters (All Systems on first use), without launching. Selector has “A: Play, X: Reroll, Y: Settings, B: Filters.” Settings retains system/favorites/recent controls and Y: Rescan; A on System selects and returns to preview. B from Filters exits; Start remains global quit. B never cancels a request already submitted. No extra launch confirmation in normal preview. Surprise Mode is explicit and off by default.
 - Use a responsive logical layout with separate wide and 4:3 arrangements. Keep title, system, current filters, and action prompts visible at both sizes. Ellipsize or wrap long UTF-8 names; retain readable font sizes. Use artwork letterboxing and a labeled fallback. Disabled Play explains why.
 - Use SDL GameController mappings inherited from KNULLI and available database entries. Translate physical A/B/X legends to application actions consistently with device layout. Provide a small remapping screen only where a verified mapping fails; keyboard is development-only.
 - Handle D-pad/hat, stick dead zone and repeat, press/release debounce, hotplug, resume, and focus loss. Ignore held launch buttons during transition. Do not consume KNULLI power/hotkey controls or change global controller files.

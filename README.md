@@ -6,6 +6,8 @@ A C++17 and SDL2 application that selects games from an existing KNULLI library.
 
 This release includes system/favorites filters, uniform random selection, preview of existing PNG/JPEG scraped artwork, reroll, session recent exclusion, controller navigation, and a single-submit ES launch handoff. It reads system configurations and gamelists, reconciles with the running ES catalogue, and never builds an emulator command or guesses a ROM directory.
 
+**Unreleased source change:** `main` opens the game selector after discovery, using saved filters. A plays the selected game; Y opens settings. Published `0.1.0` still opens filters first. No new release or App Store update is included in this change.
+
 - [Download releases](https://github.com/jellydn/knulli-random-game-picker/releases).
 - [Installation and testing](docs/testing.md): requirements, controls, logs, known limits, and the hardware report checklist.
 - [Development setup and CI](docs/development.md): host build/tests and AArch64 packaging.

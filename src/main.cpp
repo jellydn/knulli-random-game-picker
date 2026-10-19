@@ -9,6 +9,7 @@
 #include <future>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <set>
 #include <thread>
 
@@ -157,8 +158,9 @@ int main(int argc, char** argv) {
         std::vector<std::string> recent;
         std::vector<std::pair<std::string, std::string>> systems{{"", "All Systems"}};
         std::vector<std::size_t> pool;
-        std::size_t system_index = 0, selected = 0;
-        bool ready = demo, preview = false, running = true, submitting = false;
+        std::size_t system_index = 0;
+        std::optional<std::size_t> selected;
+        bool ready = demo, preview = true, running = true, submitting = false;
         int focus = 0;
         std::string notice = demo ? "Demo library - launching is disabled." : "Reading EmulationStation's library...";
         std::string launch_path;
@@ -175,7 +177,8 @@ int main(int argc, char** argv) {
             system = systems[system_index].first;
             update_pool();
         };
-        update_systems();
+        // Keep the saved system until discovery can resolve it against real games.
+        if (ready) update_systems();
         {
             Screen screen;
             if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0 || TTF_Init() != 0) throw std::runtime_error(SDL_GetError());
@@ -201,11 +204,11 @@ int main(int argc, char** argv) {
                 selected = choose(pool, random);
                 preview = true;
                 notice.clear();
-                recent.push_back(library.games[selected].path);
+                recent.push_back(library.games[*selected].path);
                 if (recent.size() > 10) recent.erase(recent.begin());
                 if (screen.art) { SDL_DestroyTexture(screen.art); screen.art = nullptr; }
                 // Load only the selected image. Large/corrupt files fall back to text.
-                const auto& image = library.games[selected].image;
+                const auto& image = library.games[*selected].image;
                 if (!image.empty() && safe_art(image)) {
                     SDL_Surface* surface = IMG_Load(image.c_str());
                     if (surface) {
@@ -214,10 +217,12 @@ int main(int argc, char** argv) {
                     }
                 }
             };
+            if (demo) roll();
             while (running) {
                 if (loading.valid() && loading.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                     try {
                         library = loading.get(); ready = true; update_systems();
+                        if (preview && !pool.empty()) roll();
                         notice = library.games.empty() ? "No eligible games. Check ES library and system configuration." :
                                  (library.warnings.empty() ? "" : library.warnings.front());
                     } catch (const std::exception& error) { notice = error.what(); }
@@ -225,11 +230,11 @@ int main(int argc, char** argv) {
                 if (verifying.valid() && verifying.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                     try {
                         const auto fresh = verifying.get();
-                        const auto& game = library.games[selected];
+                        const auto& game = library.games[*selected];
                         const auto match = std::find_if(fresh.games.begin(), fresh.games.end(), [&](const Game& item) {
                             return item.path == game.path && item.system == game.system;
                         });
-                        if (match == fresh.games.end()) throw std::runtime_error("Selected game is no longer launchable. Rescan with Y.");
+                        if (match == fresh.games.end()) throw std::runtime_error("Selected game is no longer launchable. Rescan from Settings.");
                         launch_path = game.path;
                         running = false;
                     } catch (const std::exception& error) { notice = error.what(); submitting = false; }
@@ -286,13 +291,14 @@ int main(int argc, char** argv) {
                     try {
                         if (action == 'q') { running = false; cancel = true; }
                         else if (action == 'b') { if (preview) preview = false; else { running = false; cancel = true; } }
+                        else if (action == 'y' && preview) { preview = false; notice.clear(); }
                         else if (action == 'y' && !loading.valid()) {
                             if (demo) { notice = "Demo mode: no device scan or launch."; continue; }
-                            preview = false; ready = false; notice = "Rescanning EmulationStation...";
+                            selected.reset(); ready = false; notice = "Rescanning EmulationStation...";
                             loading = std::async(std::launch::async, scan);
                         } else if (ready && preview) {
                             if (action == 'x') roll();
-                            if (action == 'a') {
+                            if (action == 'a' && selected) {
                                 if (demo) { notice = "Demo only - no launch request was sent."; continue; }
                                 notice = "Checking launch eligibility..."; submitting = true;
                                 verifying = std::async(std::launch::async, scan);
@@ -331,8 +337,8 @@ int main(int argc, char** argv) {
                     }
                     screen.text(std::to_string(pool.size()) + " eligible games", 28, 308, canvas_width - 56, muted);
                     screen.text("A: Pick / toggle    Left/Right: system", 28, 397, canvas_width - 56);
-                } else {
-                    const auto& game = library.games[selected];
+                } else if (selected) {
+                    const auto& game = library.games[*selected];
                     SDL_Rect image{28, 107, wide ? 290 : 185, 225};
                     screen.box(image, {22, 36, 47, 255});
                     if (screen.art) {
@@ -345,9 +351,14 @@ int main(int argc, char** argv) {
                     screen.text(game.title, x, 110, canvas_width - x - 28, white, true, 150);
                     screen.text(game.system_label + (game.favorite ? "\nFavorite" : ""), x, 275, canvas_width - x - 28, accent);
                     screen.text("A: Play    X: Reroll    B: Filters", 28, 397, canvas_width - 56);
+                } else {
+                    screen.text(ready ? "NO ELIGIBLE GAMES" : (loading.valid() ? "READING LIBRARY" : "LIBRARY UNAVAILABLE"),
+                                28, 130, canvas_width - 56, white, true);
+                    screen.text("Change filters or rescan from Settings.", 28, 190, canvas_width - 56, muted);
+                    screen.text("B: Filters", 28, 397, canvas_width - 56);
                 }
                 screen.text(notice, 28, 344, canvas_width - 56, accent, false, 44);
-                screen.text("Y: Rescan    B: Back / exit    Start: Quit", 28, 438, canvas_width - 56, muted);
+                screen.text(preview ? "Y: Settings    Start: Quit" : "Y: Rescan    B: Exit    Start: Quit", 28, 438, canvas_width - 56, muted);
                 if (!screenshot.empty() && ready) {
                     SDL_Surface* frame = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_RGBA32);
                     if (frame) {

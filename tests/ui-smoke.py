@@ -18,6 +18,11 @@ captures = Path(sys.argv[2]).resolve()
 captures.mkdir(parents=True, exist_ok=True)
 requests = []
 reads = []
+other_active = False
+library_available = True
+api_unavailable = False
+scan_allowed = threading.Event()
+scan_allowed.set()
 
 
 def png(path):
@@ -37,8 +42,13 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
     rom = roms / "fixture 'quoted'; $.rom"
     rom.write_text('synthetic ROM fixture, not executable')
     png(roms / 'art.png')
-    (config / 'es_systems_custom.cfg').write_text('<systemList><system><name>fixture</name><fullname>Fixture Console</fullname><path>' + html.escape(str(roms)) + '</path></system></systemList>')
+    other = root / 'other games'
+    other.mkdir()
+    other_rom = other / 'not-a-favorite.rom'
+    other_rom.write_text('another synthetic ROM fixture, not executable')
+    (config / 'es_systems_custom.cfg').write_text('<systemList><system><name>fixture</name><fullname>Fixture Console</fullname><path>' + html.escape(str(roms)) + '</path></system><system><name>other</name><fullname>Other Console</fullname><path>' + html.escape(str(other)) + '</path></system></systemList>')
     (roms / 'gamelist.xml').write_text('<gameList><game><path>./' + html.escape(rom.name) + '</path><image>./art.png</image></game></gameList>')
+    (other / 'gamelist.xml').write_text('<gameList><game><path>./not-a-favorite.rom</path></game></gameList>')
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -47,9 +57,17 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
         def do_GET(self):
             reads.append(self.path)
             if self.path == '/systems':
-                data = [{'name': 'fixture', 'gamesystem': 'true', 'collection': 'false'}]
+                scan_allowed.wait(timeout=5)
+                if api_unavailable:
+                    self.send_error(503)
+                    return
+                data = [{'name': 'fixture', 'gamesystem': 'true', 'collection': 'false'}] if library_available else []
+                if other_active and library_available:
+                    data.append({'name': 'other', 'gamesystem': 'true', 'collection': 'false'})
             elif self.path == '/systems/fixture/games':
                 data = [{'path': str(rom), 'name': 'A synthetic game for testing', 'favorite': 'true'}]
+            elif self.path == '/systems/other/games':
+                data = [{'path': str(other_rom), 'name': 'Saved system game', 'favorite': 'false'}]
             else:
                 self.send_error(404)
                 return
@@ -81,6 +99,40 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
         environment['DISPLAY'] = ':' + pipe.readline().strip()
     environment['PICKER_STATE_DIR'] = str(root / 'state')
     process = None
+
+    def wait_window():
+        for _ in range(100):
+            search = subprocess.run(['xdotool', 'search', '--name', 'KNULLI Random Game Picker'], env=environment, capture_output=True, text=True)
+            if search.returncode == 0:
+                return search.stdout.splitlines()[0]
+            assert process.poll() is None, 'UI exited before opening'
+            time.sleep(0.05)
+        raise AssertionError('UI did not open')
+
+    def wait_reads(count):
+        for _ in range(100):
+            if len(reads) >= count:
+                time.sleep(0.3)
+                return
+            assert process.poll() is None, 'UI exited while reading the library'
+            time.sleep(0.05)
+        raise AssertionError('Library scan did not finish')
+
+    def key(window, name):
+        subprocess.run(['xdotool', 'key', '--window', window, name], env=environment, check=True, stderr=subprocess.DEVNULL)
+        time.sleep(0.1)
+
+    def capture(window, state, size):
+        path = captures / f'{state}-{size}.png'
+        for _ in range(100):
+            subprocess.run(['import', '-display', environment['DISPLAY'], '-window', window, str(path)], check=True)
+            colors = subprocess.check_output(['identify', '-format', '%k', str(path)], text=True)
+            if int(colors) > 16:
+                return
+            assert process.poll() is None, 'UI exited before rendering'
+            time.sleep(0.05)
+        raise AssertionError('UI capture remained blank')
+
     try:
         # KNULLI's normal ES->SDL mapping swaps both face-button pairs.
         # Feed SDL events, not keyboard equivalents, to catch the reported bug.
@@ -93,35 +145,42 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
                                               LD_PRELOAD=str(binary.parent / 'libcontroller-events.so'))
                 before_launch, before_reads = len(requests), len(reads)
                 process = subprocess.Popen([str(binary), '--windowed', '--size', '1280x720', '--es-config', str(config)], env=controller_environment)
-                for _ in range(100):
-                    if len(reads) >= before_reads + 2:
-                        break
-                    assert process.poll() is None
-                    time.sleep(0.05)
-                time.sleep(0.5)
+                window = wait_window()
+                wait_reads(before_reads + 2)
                 def pad(button):
                     buttons.write(bytes([button]))
                     time.sleep(0.2)
-                pad(a)  # ES A selects; it must not exit or launch.
-                assert process.poll() is None, f'{layout}: A exited instead of selecting'
-                assert len(requests) == before_launch
-                pad(x)  # ES X rerolls without requesting a rescan.
-                assert len(reads) == before_reads + 2, f'{layout}: X rescanned instead of rerolling'
-                pad(b)  # ES B returns to filters without launching.
-                assert process.poll() is None and len(requests) == before_launch, f'{layout}: B did not return to filters'
-                pad(y)  # ES Y must rescan, not reroll or do nothing.
-                for _ in range(100):
-                    if len(reads) >= before_reads + 4:
-                        break
-                    time.sleep(0.05)
-                assert len(reads) == before_reads + 4, f'{layout}: Y did not rescan'
-                time.sleep(0.3)
-                pad(a)
-                pad(a)
-                assert process.wait(timeout=10) == 0
+                capture(window, f'{layout}-startup', '1280x720')
+                assert len(requests) == before_launch, 'Startup must not launch automatically'
+                pad(a)  # The first A after startup plays the automatically selected game.
+                assert process.wait(timeout=5) == 0, f'{layout}: startup requires another selection step'
                 assert len(requests) == before_launch + 1
                 assert requests[-1] == ('/launch', str(rom).encode(), 1)
-                print(f'PASS: {layout} controller events: A pick/play, B back, X reroll, Y rescan')
+
+                before_launch, before_reads = len(requests), len(reads)
+                process = subprocess.Popen([str(binary), '--windowed', '--size', '1280x720', '--es-config', str(config)], env=controller_environment)
+                wait_window()
+                wait_reads(before_reads + 2)
+                pad(x)  # ES X rerolls without requesting a rescan.
+                assert len(reads) == before_reads + 2, f'{layout}: X rescanned instead of rerolling'
+                pad(y)  # ES Y opens settings, without a scan or launch.
+                assert len(reads) == before_reads + 2 and len(requests) == before_launch, f'{layout}: Y did not open settings'
+                pad(y)  # Y inside settings retains the existing rescan action.
+                wait_reads(before_reads + 4)
+                assert len(reads) == before_reads + 4, f'{layout}: settings rescan failed'
+                pad(a)  # Settings System row selects a game as before.
+                pad(b)  # ES B returns to filters without launching.
+                assert process.poll() is None and len(requests) == before_launch, f'{layout}: B did not return to filters'
+                pad(b)  # B from filters still quits.
+                assert process.wait(timeout=5) == 0 and len(requests) == before_launch
+
+                before_reads = len(reads)
+                process = subprocess.Popen([str(binary), '--windowed', '--size', '1280x720', '--es-config', str(config)], env=controller_environment)
+                wait_window()
+                wait_reads(before_reads + 2)
+                pad(6)  # SDL Start remains a global quit, including the new startup view.
+                assert process.wait(timeout=5) == 0 and len(requests) == before_launch
+                print(f'PASS: {layout}: startup A plays once, Y settings/rescan, X reroll, B back/quit, Start quit')
         requests.clear()
         for size in ('1280x720', '640x480'):
             image = roms / 'art.png'
@@ -132,65 +191,130 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
                 gamelist.write_text(gamelist.read_text().replace('art.png', 'art.jpg'))
             # Each width starts from the same filter state, not the prior run's saved settings.
             (root / 'state/settings.json').unlink(missing_ok=True)
+            before_reads = len(reads)
             process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
-            window = ''
-            for _ in range(100):
-                search = subprocess.run(['xdotool', 'search', '--name', 'KNULLI Random Game Picker'], env=environment, capture_output=True, text=True)
-                if search.returncode == 0:
-                    window = search.stdout.splitlines()[0]
-                    break
-                assert process.poll() is None, 'UI exited before opening'
-                time.sleep(0.05)
-            assert window, 'UI did not open'
-            def key(name):
-                subprocess.run(['xdotool', 'key', '--window', window, name], env=environment, check=True, stderr=subprocess.DEVNULL)
-                time.sleep(0.1)
-            def capture(state):
-                path = captures / f'{state}-{size}.png'
-                for _ in range(100):
-                    subprocess.run(['import', '-display', environment['DISPLAY'], '-window', window, str(path)], check=True)
-                    colors = subprocess.check_output(['identify', '-format', '%k', str(path)], text=True)
-                    if int(colors) > 16:
-                        return
-                    assert process.poll() is None, 'UI exited before rendering'
-                    time.sleep(0.05)
-                raise AssertionError('UI capture remained blank')
-            time.sleep(0.3)
-            capture('filters')
-            key('Return')
-            capture('preview-art')
+            window = wait_window()
+            wait_reads(before_reads + 2)
+            capture(window, 'selector', size)
             original_art = image.read_bytes()
             image.write_bytes(b'not a valid image')
-            key('x')
-            capture('fallback')
+            key(window, 'x')
+            capture(window, 'fallback', size)
             image.write_bytes(original_art)
             for _ in range(100):
-                key('x')
+                key(window, 'x')
             assert process.poll() is None, 'UI crashed during rerolls'
-            key('Escape')
-            key('Down')
-            key('Return')  # favorites toggle
-            capture('favorites')
-            key('Down')
-            key('Return')  # exclude recent
-            key('Up')
-            key('Up')
-            key('Return')
-            capture('empty-recent')
-            key('Down')
-            key('Down')
-            key('Down')
-            key('Return')  # clear history
-            key('Up')
-            key('Up')
-            key('Up')
-            key('Return')  # select again
-            key('Return')  # real single-submit handoff to fake ES
+            key(window, 'y')
+            capture(window, 'settings', size)
+            key(window, 'Down')
+            key(window, 'Return')  # favorites toggle
+            capture(window, 'favorites', size)
+            key(window, 'Down')
+            key(window, 'Return')  # exclude recent
+            key(window, 'Up')
+            key(window, 'Up')
+            key(window, 'Return')
+            capture(window, 'empty-recent', size)
+            key(window, 'Down')
+            key(window, 'Down')
+            key(window, 'Down')
+            key(window, 'Return')  # clear history
+            key(window, 'Up')
+            key(window, 'Up')
+            key(window, 'Up')
+            key(window, 'Return')  # select again
+            key(window, 'Return')  # real single-submit handoff to fake ES
             assert process.wait(timeout=10) == 0
             assert requests[-1] == ('/launch', str(rom).encode(), 1), requests
             assert len(requests) == (1 if size == '1280x720' else 2), requests
             print(f'PASS: {size}, scraped-art preview, 100 rerolls, filters, empty pool, SDL teardown before one launch')
+
+        # The retained system contains only a nonfavorite; the other system has
+        # a favorite. Ignoring either saved filter would make A launch a game.
+        other_active = True
+        for size in ('1280x720', '640x480'):
+            requests.clear()
+            saved = {'system': 'other', 'favorites': True}
+            (root / 'state/settings.json').write_text(json.dumps(saved))
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 3)
+            capture(window, 'empty-saved-filter', size)
+            key(window, 'Return')
+            assert process.poll() is None and not requests, 'Startup ignored saved system or favorites'
+            key(window, 'y')
+            capture(window, 'saved-settings', size)
+            key(window, 'Escape')
+            assert process.wait(timeout=5) == 0
+            assert json.loads((root / 'state/settings.json').read_text()) == saved
+
+            saved['favorites'] = False
+            (root / 'state/settings.json').write_text(json.dumps(saved))
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 3)
+            key(window, 'Return')
+            assert process.wait(timeout=5) == 0
+            assert requests == [('/launch', str(other_rom).encode(), 1)]
+            assert json.loads((root / 'state/settings.json').read_text()) == saved
+
+            library_available = False
+            requests.clear()
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 1)
+            capture(window, 'empty-library', size)
+            key(window, 'Return')
+            key(window, 'x')
+            assert process.poll() is None and not requests, 'Empty library launched or crashed'
+            key(window, 'y')
+            key(window, 'y')  # Rescan remains reachable even without a selected game.
+            wait_reads(before_reads + 2)
+            key(window, 'Escape')
+            assert process.wait(timeout=5) == 0 and not requests
+            library_available = True
+            print(f'PASS: {size}: saved filters applied on startup and preserved; empty selector recovers through settings')
+
+            # Opening settings before discovery completes must not start a second
+            # scan or let the background result pull the user back to the selector.
+            scan_allowed.clear()
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 1)
+            capture(window, 'loading', size)
+            key(window, 'y')
+            capture(window, 'loading-settings', size)
+            assert len(reads) == before_reads + 1
+            scan_allowed.set()
+            wait_reads(before_reads + 3)
+            key(window, 'Escape')
+            assert process.wait(timeout=5) == 0 and not requests, 'Discovery stole settings focus'
+
+            api_unavailable = True
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 1)
+            capture(window, 'unavailable', size)
+            key(window, 'Return')
+            key(window, 'x')
+            assert process.poll() is None and not requests, 'Failed discovery launched or crashed'
+            key(window, 'y')
+            api_unavailable = False
+            key(window, 'y')
+            wait_reads(before_reads + 4)
+            key(window, 'Return')
+            capture(window, 'recovered', size)
+            key(window, 'Escape')
+            key(window, 'Escape')
+            assert process.wait(timeout=5) == 0 and not requests
+            print(f'PASS: {size}: settings remains open during discovery; unavailable library recovers by rescan')
     finally:
+        scan_allowed.set()
         if process and process.poll() is None:
             process.terminate()
             process.wait(timeout=8)

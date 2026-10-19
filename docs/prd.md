@@ -22,6 +22,8 @@ Reduce decision fatigue for retro handheld owners with large ROM collections. Bu
 
 Flow: open Port → select system → A to select → preview → A to play or X to reroll → B to change filters or exit. Use a dark retro-style theme at 1280×720 and 640×480. Roulette animation is optional. Missing artwork must have a useful fallback.
 
+Owner flow update, 2026-10-19: open Port → automatically show a random game using saved filters → A to play or X to reroll. Y opens the existing settings/filters screen; Y there still rescans. B remains selector → filters → exit, and Start remains global quit. This supersedes the baseline's initial system-selection step. It is implemented on source `main`, not in published `0.1.0`; see [current controls](testing.md#controls).
+
 ## Constraints and non-functional requirements
 
 - Discover games through EmulationStation system configuration and `gamelist.xml`; reuse scraped artwork.

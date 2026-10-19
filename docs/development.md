@@ -30,7 +30,7 @@ For the SDL smoke test, install `xvfb`, `xdotool`, and `imagemagick`, then run:
 python3 tests/ui-smoke.py build/host/random-game-picker build/ui-smoke
 ```
 
-It starts a temporary X display and fake ES server, exercises both sizes and 100 rerolls per size, and verifies that the window closes before one exact-path launch request. A test-only preload library feeds logical SDL controller releases through the event queue: both default KNULLI and Xbox-layout modes must implement A pick/play, B back, X reroll without a rescan, and Y rescan. The regression fails on alpha.1 because A exits. This does not simulate a physical controller driver or prove hardware mappings. It never starts an emulator. It needs loopback port 1234 free. Captures use a synthetic game and artwork, not a real device library.
+It starts a temporary X display and fake ES server, exercises both sizes and 100 rerolls per size, and verifies that the window closes before one exact-path launch request. A test-only preload library feeds logical SDL controller releases through the event queue: both default KNULLI and Xbox-layout modes must play with the first A after startup, reroll with X without a scan, open settings with Y, rescan with Y inside settings, return/quit with B, and quit with Start. The startup regression fails on published `0.1.0`, which needs a separate selection step. Saved-system/favorites fixtures also cover an empty intersection, valid saved selection, persistence, and an empty library without a launch or crash. Delayed discovery must not take focus from settings; a failed discovery must recover through settings/rescan. This does not simulate a physical controller driver or prove hardware mappings. It never starts an emulator. It needs loopback port 1234 free. Captures use synthetic games and artwork, not a real device library.
 
 For a desktop demo (launch and persistent writes disabled):
 
@@ -38,7 +38,7 @@ For a desktop demo (launch and persistent writes disabled):
 ./build/host/random-game-picker --demo --windowed --size 640x480
 ```
 
-Keyboard controls: arrows, Enter (A), Escape (B), X (reroll), Y (rescan). `--es-config DIR` selects a custom ES user configuration directory for fixture testing. `PICKER_STATE_DIR` selects app-owned settings/log state. No CLI option accepts an emulator command.
+Keyboard controls: arrows, Enter (A), Escape (B), X (reroll), Y (settings from selector; rescan inside settings). The demo also opens directly on a selected game, but never scans or launches. `--es-config DIR` selects a custom ES user configuration directory for fixture testing. `PICKER_STATE_DIR` selects app-owned settings/log state. No CLI option accepts an emulator command.
 
 Build an experimental AArch64 archive on Debian 12 with `./scripts/build-device`. This installs cross dependencies, builds with static pugixml/libstdc++/libgcc, inspects dynamic dependencies and GLIBC symbols, and calls `scripts/package-device`. The ZIP, checksum, exact sizes, inventory, and ELF report go under `build/release`. Archive entry ordering and timestamps are stable; toolchain/package versions can still change binary bytes, so manifests must use the exact published asset, not a later rebuild.
 
