@@ -113,9 +113,11 @@ int main(int argc, char** argv) {
         fs::path assets = fs::canonical("/proc/self/exe").parent_path() / "assets";
         const char* state_env = std::getenv("PICKER_STATE_DIR");
         fs::path state = state_env ? state_env : "/userdata/system/configs/random-game-picker";
+        const char* controller_layout = std::getenv("PICKER_CONTROLLER_LAYOUT");
+        const bool knulli_buttons = controller_layout && std::string(controller_layout) == "knulli";
         for (int i = 1; i < argc; ++i) {
             const std::string argument = argv[i];
-            if (argument == "--version") { std::cout << "0.1.0-alpha.1\n"; return 0; }
+            if (argument == "--version") { std::cout << "0.1.0-alpha.2\n"; return 0; }
             else if (argument == "--demo") demo = true;
             else if (argument == "--windowed") windowed = true;
             else if (argument == "--assets" && i + 1 < argc) assets = argv[++i];
@@ -129,6 +131,7 @@ int main(int argc, char** argv) {
             } else if (argument == "--screenshot" && i + 1 < argc) screenshot = argv[++i];
             else throw std::runtime_error("Options: --version --demo --windowed --size WIDTHxHEIGHT --assets DIR --es-config DIR --screenshot PNG");
         }
+        std::cout << "Controller layout: " << (knulli_buttons ? "KNULLI default ES labels" : "SDL / KNULLI Xbox layout") << '\n';
         locations.home = std::getenv("HOME") ? std::getenv("HOME") : "/userdata/system";
         std::atomic<bool> cancel{false};
         std::future<Library> loading;
@@ -256,8 +259,18 @@ int main(int argc, char** argv) {
                         }
                     }
                     if (event.type == SDL_CONTROLLERBUTTONUP) {
-                        switch (event.cbutton.button) {
-                            // Use the inherited KNULLI mapping, not raw device button numbers.
+                        auto button = event.cbutton.button;
+                        // Configgen maps ES a/b/x/y to SDL b/a/y/x, except in Xbox-layout mode.
+                        // Translate back to the ES labels printed by this UI, not raw device IDs.
+                        if (knulli_buttons) {
+                            switch (button) {
+                                case SDL_CONTROLLER_BUTTON_A: button = SDL_CONTROLLER_BUTTON_B; break;
+                                case SDL_CONTROLLER_BUTTON_B: button = SDL_CONTROLLER_BUTTON_A; break;
+                                case SDL_CONTROLLER_BUTTON_X: button = SDL_CONTROLLER_BUTTON_Y; break;
+                                case SDL_CONTROLLER_BUTTON_Y: button = SDL_CONTROLLER_BUTTON_X; break;
+                            }
+                        }
+                        switch (button) {
                             case SDL_CONTROLLER_BUTTON_A: action = 'a'; break;
                             case SDL_CONTROLLER_BUTTON_B: action = 'b'; break;
                             case SDL_CONTROLLER_BUTTON_X: action = 'x'; break;
@@ -304,7 +317,7 @@ int main(int argc, char** argv) {
                 }
                 screen.box({0, 0, canvas_width, 480}, {12, 22, 30, 255});
                 screen.text("RANDOM GAME PICKER", 28, 20, canvas_width - 56, white, true);
-                screen.text(demo ? "DEMO / NO LAUNCH" : "v0.1.0-alpha.1 / EXPERIMENTAL", 28, 61, canvas_width - 56, accent);
+                screen.text(demo ? "DEMO / NO LAUNCH" : "v0.1.0-alpha.2 / EXPERIMENTAL", 28, 61, canvas_width - 56, accent);
                 if (!preview) {
                     const std::vector<std::string> rows{
                         "System:  " + systems[system_index].second,

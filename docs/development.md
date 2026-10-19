@@ -30,7 +30,7 @@ For the SDL smoke test, install `xvfb`, `xdotool`, and `imagemagick`, then run:
 python3 tests/ui-smoke.py build/host/random-game-picker build/ui-smoke
 ```
 
-It starts a temporary X display and fake ES server, exercises both sizes and 100 rerolls per size, and verifies that the window closes before one exact-path launch request. It never starts an emulator. It needs loopback port 1234 free. Captures use a synthetic game and artwork, not a real device library.
+It starts a temporary X display and fake ES server, exercises both sizes and 100 rerolls per size, and verifies that the window closes before one exact-path launch request. A test-only preload library feeds logical SDL controller releases through the event queue: both default KNULLI and Xbox-layout modes must implement A pick/play, B back, X reroll without a rescan, and Y rescan. The regression fails on alpha.1 because A exits. This does not simulate a physical controller driver or prove hardware mappings. It never starts an emulator. It needs loopback port 1234 free. Captures use a synthetic game and artwork, not a real device library.
 
 For a desktop demo (launch and persistent writes disabled):
 
@@ -48,4 +48,4 @@ Build an experimental AArch64 archive on Debian 12 with `./scripts/build-device`
 
 This follows the [KNULLI App Store setup](https://github.com/jellydn/knulli-app-store/blob/main/.agents/setup) and [check workflow](https://github.com/jellydn/knulli-app-store/blob/main/.github/workflows/check.yml) patterns. Its [original setup/CI thread](https://ampcode.com/threads/T-01a0a370-234b-729a-9b63-3871aa36a52c) records the method: inspect the environment, add repeatable setup, use shared checks, and verify locally before delivery. Action commit pins match the inspected App Store workflows; Go/catalogue commands do not belong in the picker build.
 
-The owner approved the public GitHub mirror and first experimental release. `.github/workflows/release.yml` publishes only the `v0.1.0-alpha.1` tag, after host and device jobs pass; the publication job uploads the device job's exact bytes without rebuilding. Do not replace published assets or move a published tag. A later version needs a reviewed version/trigger change. Publishing the alpha does not close M0 hardware gates.
+The owner approved the public GitHub mirror and experimental releases for device testing, then reported the TSP button mismatch. `.github/workflows/release.yml` now publishes only the corrected `v0.1.0-alpha.2` tag, after host and device jobs pass; the publication job uploads the device job's exact bytes without rebuilding. Alpha.1 remains unchanged. Do not replace published assets or move a published tag. A later version needs a reviewed version/trigger change. Publishing the alpha does not close M0 hardware gates.

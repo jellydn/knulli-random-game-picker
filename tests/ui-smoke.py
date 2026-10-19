@@ -17,6 +17,7 @@ binary = Path(sys.argv[1]).resolve()
 captures = Path(sys.argv[2]).resolve()
 captures.mkdir(parents=True, exist_ok=True)
 requests = []
+reads = []
 
 
 def png(path):
@@ -44,6 +45,7 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             pass
 
         def do_GET(self):
+            reads.append(self.path)
             if self.path == '/systems':
                 data = [{'name': 'fixture', 'gamesystem': 'true', 'collection': 'false'}]
             elif self.path == '/systems/fixture/games':
@@ -80,6 +82,47 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
     environment['PICKER_STATE_DIR'] = str(root / 'state')
     process = None
     try:
+        # KNULLI's normal ES->SDL mapping swaps both face-button pairs.
+        # Feed SDL events, not keyboard equivalents, to catch the reported bug.
+        fifo = root / 'controller-input'
+        os.mkfifo(fifo)
+        with os.fdopen(os.open(fifo, os.O_RDWR | os.O_NONBLOCK), 'wb', buffering=0) as buttons:
+            for layout, a, b, x, y in [('knulli', 1, 0, 3, 2), ('xbox', 0, 1, 2, 3)]:
+                controller_environment = dict(environment, PICKER_CONTROLLER_LAYOUT=layout,
+                                              PICKER_TEST_INPUT_FIFO=str(fifo),
+                                              LD_PRELOAD=str(binary.parent / 'libcontroller-events.so'))
+                before_launch, before_reads = len(requests), len(reads)
+                process = subprocess.Popen([str(binary), '--windowed', '--size', '1280x720', '--es-config', str(config)], env=controller_environment)
+                for _ in range(100):
+                    if len(reads) >= before_reads + 2:
+                        break
+                    assert process.poll() is None
+                    time.sleep(0.05)
+                time.sleep(0.5)
+                def pad(button):
+                    buttons.write(bytes([button]))
+                    time.sleep(0.2)
+                pad(a)  # ES A selects; it must not exit or launch.
+                assert process.poll() is None, f'{layout}: A exited instead of selecting'
+                assert len(requests) == before_launch
+                pad(x)  # ES X rerolls without requesting a rescan.
+                assert len(reads) == before_reads + 2, f'{layout}: X rescanned instead of rerolling'
+                pad(b)  # ES B returns to filters without launching.
+                assert process.poll() is None and len(requests) == before_launch, f'{layout}: B did not return to filters'
+                pad(y)  # ES Y must rescan, not reroll or do nothing.
+                for _ in range(100):
+                    if len(reads) >= before_reads + 4:
+                        break
+                    time.sleep(0.05)
+                assert len(reads) == before_reads + 4, f'{layout}: Y did not rescan'
+                time.sleep(0.3)
+                pad(a)
+                pad(a)
+                assert process.wait(timeout=10) == 0
+                assert len(requests) == before_launch + 1
+                assert requests[-1] == ('/launch', str(rom).encode(), 1)
+                print(f'PASS: {layout} controller events: A pick/play, B back, X reroll, Y rescan')
+        requests.clear()
         for size in ('1280x720', '640x480'):
             image = roms / 'art.png'
             if size == '640x480':

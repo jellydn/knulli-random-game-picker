@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    tags: [v0.1.0-alpha.1]
+    tags: [v0.1.0-alpha.2]
 
 permissions:
   contents: read
@@ -59,4 +59,4 @@ jobs:
         run: |
           gh release create "$TAG" release/* evidence/*.png --verify-tag --prerelease \
             --title "Random Game Picker $TAG (experimental device test)" \
-            --notes 'First experimental test build, not verified on a handheld. Requires aarch64 glibc 2.36+, SDL2, SDL2_image and SDL2_ttf. Uses local EmulationStation HTTP only. Launch handoff, physical button labels and performance need real-device testing. Persistent library caching and Surprise Mode are not included. Read docs/testing.md before testing. No emulator commands or ROM roots are hardcoded.'
+            --notes 'Fixes reversed A/B and X/Y actions reported on TrimUI Smart Pro: translate default KNULLI Ports SDL bindings back to ES labels, while respecting the Ports Xbox-layout flag. Synthetic SDL controller tests cover A pick/play, B back, X reroll and Y rescan in both modes; hardware retest is still needed. Update the complete package, including RandomGamePicker.sh. Requires aarch64 glibc 2.36+, SDL2/image/ttf and local ES HTTP. Launch handoff and performance remain experimental. Persistent library caching and Surprise Mode are not included. Read docs/testing.md before testing.'

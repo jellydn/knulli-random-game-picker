@@ -1,4 +1,4 @@
-# Experimental device test — 0.1.0-alpha.1
+# Experimental device test — 0.1.0-alpha.2
 
 ## Requirements and scope
 
@@ -24,13 +24,17 @@ The launcher resolves its own directory, inherits KNULLI's SDL mappings, and wri
 - Preview A: submit Play; X: reroll; B: return to filters.
 - Y: rescan; B from filters or Start: quit.
 
-Buttons use the inherited SDL GameController mapping (also loading KNULLI's `/tmp/gamecontrollerdb.txt`). Actual physical legends and mapping need your device report. No raw device button indices are hardcoded. If no controller maps correctly, stop the test and report the GUID/name from diagnostics or the app log rather than modifying system mappings blindly.
+Alpha.1 reversed A/B and X/Y on the owner's TrimUI Smart Pro. Alpha.2 translates KNULLI's default generated SDL mapping back to ES button labels. The launcher reads `/var/run/ports_xbox_layout.flag`, the same mode flag used by KNULLI configgen, and leaves the non-swapped Xbox-layout mapping unchanged. Update **both the launcher and binary**, not just the binary. Store updates preserve `state`; manual updates must also leave it intact.
+
+Buttons still use the inherited SDL GameController mapping (also loading KNULLI's `/tmp/gamecontrollerdb.txt`); no raw device button indices are hardcoded. The session log reports the selected layout. The labels describe ES inputs, so custom ES mappings or differently labelled external pads still need testing. Direct desktop execution without the Port launcher retains standard SDL labels; `PICKER_CONTROLLER_LAYOUT=knulli` selects the default KNULLI translation for fixture testing. Report physical A pick/play, B back, X reroll and Y rescan separately. Do not modify system mappings blindly.
+
+Source contract: KNULLI [controller.py](https://github.com/knulli-cfw/knulli-linux/blob/knulli-main/package/system/knulli-configgen/configgen/configgen/controller.py) maps default ES `a/b/x/y` to SDL `b/a/y/x`; its Xbox-layout mode maps names directly. The [Ports hook](https://github.com/knulli-cfw/knulli-linux/blob/knulli-main/board/fsoverlay/usr/share/knulli/configgen/scripts/ports_hooks.sh) owns the layout flag. This is a shared Ports policy, not a guessed TSP button-number table.
 
 Play rechecks the full live catalogue, closes SDL/input, submits the exact path **once** as plain text to ES, then exits. A 2xx response means submitted, not played. After a timeout or unexpected return to Ports, inspect the log before trying again; never assume a failed response means ES did not accept the request.
 
 ## Known limits, not completed MVP claims
 
-- No physical-device tests, configured-emulator success rate, Quick Resume/history proof, or cached-startup/performance measurements yet.
+- The owner reported the alpha.1 button mismatch on TSP; alpha.2 still needs a hardware retest. No completed launch/return matrix, configured-emulator success rate, Quick Resume/history proof, or cached-startup/performance measurements yet.
 - No persistent game-index cache. A background ES/config/XML read runs on startup/rescan and before Play. Selection uses an in-memory flat pool; artwork decodes synchronously for the selected game. The plan's M2 budgets are not claimed.
 - Recent exclusion is session-only and optional; it never silently relaxes an empty pool. Reset recent selections to continue.
 - Favorites come from live ES metadata. Artwork comes from gamelist PNG/JPEG files capped at 8 MiB and 2048×2048; other/oversized/missing art uses a fallback.
