@@ -1,35 +1,60 @@
-# Installation and testing — 0.1.1
+# Installation and testing — 0.2.0
 
-## Unreleased Go source (`0.2.0-dev`)
+## Release and source status
 
-The current source rewrites the app in Go with gabagool/v2 and the selected
-centered-artwork layout. It retains the controls, state keys and KNULLI launch
-contract below. It now requires firmware-provided **SDL2_gfx** in addition to
-SDL2/image/ttf, and writes a separate `state/ui.log` for toolkit diagnostics.
-Do not install on a device without checking the new ELF dependencies. This source
-is not covered by the earlier TSP report. Retest both handhelds before release.
-Only KNULLI is supported; `--firmware` rejects other names. See
-[Go architecture](go-rewrite.md) and [development](development.md).
+[Version 0.2.0 is published](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
+It uses Go and gabagool/v2, with centered artwork and selector-first startup.
+It retains the saved state keys and KNULLI launch contract from 0.1.1. The new
+toolkit log is `state/ui.log`. Only KNULLI is supported; `--firmware` rejects
+other names. This checkout still prints `0.2.0-dev`; local packages are not the
+published asset. See [Go architecture](go-rewrite.md) and [development](development.md).
 
 ## Requirements and scope
 
-This build targets TrimUI Smart Pro (1280×720) and MagicX Zero 28 (640×480). On 2026-10-19 the owner confirmed that alpha.2 works on TSP after the face-button correction and requested this stable release. Exact firmware details and the full matrix below were not supplied; MagicX remains unverified. It requires KNULLI, aarch64 glibc **2.36 or later**, and the firmware's SDL2, SDL2_image and SDL2_ttf. The package does not replace system libraries. Older firmware must be blocked, not bypassed.
+The target devices are TrimUI Smart Pro (1280×720) and MagicX Zero 28 (640×480).
+The published 0.2.0 asset requires KNULLI, Linux AArch64, glibc **2.34 or later**,
+and firmware SDL2, SDL2_image, SDL2_ttf, and **SDL2_gfx**. The package does not
+replace system libraries. Check the release's `artifact.json` and `abi.txt`;
+do not infer the release ABI from a local build. MagicX remains unverified.
+
+The release notes record a development-build test on TSP, KNULLI beta 2026/09/21,
+at 1280×720. SDL2_gfx resolved, both screens rendered, and injected events through
+the real evdev input path exercised default and effective Xbox mappings. The test
+completed 100 paced rerolls at about 36 MiB RSS. An exact-path Game Boy request
+started Gambatte with audio and input initialization. The emulator later exited
+with RetroAchievements login errors; ES display was restored. The stable build
+changes the version string and package documentation, not the picker implementation.
+This does not prove physical button presses, audible sound, uninterrupted play,
+or normal hotkey return. The checklist below remains necessary.
 
 Runtime reads ES system configurations, `gamelist.xml` artwork paths, and the running ES catalogue through local `127.0.0.1:1234` HTTP. The local API must be available while a Port runs. Public Web Access and Internet access are not required. No DNS, redirects, downloads, telemetry, accounts, or non-loopback endpoints are used. The App Store manifest declares network use because loopback sockets are still network API use.
 
-Version 0.1.1 adds selector-first startup and preserves saved filters before discovery. Host fixtures and AArch64 ABI checks cover this version; the earlier TSP report does not verify this new flow. It does not close the plan's full M0/M3 device gates. ES must queue the submitted game and process it after the Port's wrapper/configgen exits. No fallback invokes emulator binaries or nests configgen.
+Version 0.2.0 retains selector-first startup and saved filters before discovery.
+Host fixtures and package ABI checks do not close the plan's full M0/M3 device
+gates. ES must queue the submitted game and process it after the Port's
+wrapper/configgen exits. No fallback invokes emulator binaries or nests configgen.
 
 ## Install
 
 Prefer the reviewed experimental App Store entry when available. Its first package targets the standard KNULLI Ports layout at `/userdata/roms/ports/RandomGamePicker` and owns one menu entry. It does not rewrite ES system configuration. If your configured Ports root is different, do not use that fixed-location Store package; use the manual archive below in your actual configured Ports root.
 
-For manual installation, verify the ZIP against the release's `SHA256SUMS.txt`, create a `RandomGamePicker` directory **inside your configured Ports root**, and extract all archive contents there. Keep `RandomGamePicker.sh`, the binary, `assets/`, and licenses together. Ensure the launcher and binary are executable; refresh ES's game list if needed. Open **Random Game Picker** from Ports. Do not place ROMs in the package directory.
+For manual installation, download `random-game-picker-0.2.0-knulli-aarch64.zip`
+and verify it against the release's `SHA256SUMS.txt`. Create a `RandomGamePicker`
+directory **inside your configured Ports root**, and extract all archive contents
+there. Keep `RandomGamePicker.sh`, the binary, `assets/`, and licenses together.
+Ensure the launcher and binary are executable; refresh ES's game list if needed.
+Open **Random Game Picker** from Ports. Do not place ROMs in the package directory.
 
-The launcher resolves its own directory, inherits KNULLI's SDL mappings, and writes only `state/settings.json`, its temporary replacement, and `state/last-run.log` below the package directory. The log is replaced each session. Store repair/update/uninstall preserve `state`. ROMs, gamelists, scraped art, emulator settings, and saves are read-only to the picker. ES/emulators still perform their normal play-history/save writes when launched.
+The launcher resolves its own directory and inherits KNULLI's SDL mappings.
+App-owned files are `state/settings.json`, its temporary replacement,
+`state/last-run.log`, and `state/ui.log` below the package directory. The session
+log is replaced each start. Preserve `state` during manual updates. ROMs,
+gamelists, scraped art, emulator settings, and saves are read-only to the picker.
+ES/emulators still perform their normal play-history/save writes when launched.
 
 ## Controls
 
-### Version `0.1.1` — selector-first flow
+### Version `0.2.0` — selector-first flow
 
 After discovery, the selector shows a random game using your saved system and favorites filters. Startup does not launch a game. Press A once to play, X to reroll, or Y to open the existing settings/filters screen. If the library or filters have no eligible games, Play is unavailable; Y still opens settings so you can change filters or rescan.
 
@@ -39,7 +64,9 @@ After discovery, the selector shows a random game using your saved system and fa
 - B from the selector returns to settings; B from settings quits. Start still quits globally.
 - The saved system and favorites values are applied before the first selection and retained on exit. Recent exclusion remains session-only.
 
-Retest first-press Play, Y settings/rescan, B back/quit, and saved filters on each handheld. Install the complete `0.1.1` archive and preserve `state`; do not replace just the binary. The earlier `0.1.0` assets remain unchanged.
+Retest first-press Play, Y settings/rescan, B back/quit, and saved filters on each
+handheld. Install the complete `0.2.0` archive and preserve `state`; do not replace
+just the binary. Earlier release assets remain unchanged.
 
 ### Published `0.1.0` — filters-first flow
 
@@ -61,7 +88,10 @@ Play rechecks the full live catalogue, closes SDL/input, submits the exact path 
 
 ## Known limits, not completed MVP claims
 
-- The owner confirmed that the corrected alpha.2 works on TSP. No completed launch/return matrix, configured-emulator success rate, Quick Resume/history proof, or cached-startup/performance measurements yet; MagicX remains unverified.
+- TSP evidence is limited to the development-build test above. Physical presses,
+  audible audio, normal hotkey return, external controllers, emulator overrides,
+  a second emulated system, Quick Resume/history, and precise cold-start,
+  latency/FPS budgets remain unverified. MagicX remains unverified.
 - No persistent game-index cache. A background ES/config/XML read runs on startup/rescan and before Play. Selection uses an in-memory flat pool; artwork decodes synchronously for the selected game. The plan's M2 budgets are not claimed.
 - Recent exclusion is session-only and optional; it never silently relaxes an empty pool. Reset recent selections to continue.
 - Favorites come from live ES metadata. Artwork comes from gamelist PNG/JPEG files capped at 8 MiB and 2048×2048; other/oversized/missing art uses a fallback.

@@ -1,6 +1,10 @@
 # Development setup and CI
 
-The source is now the unreleased Go/gabagool rewrite. Host builds and fixture tests do not prove KNULLI compatibility; see the [device test guide](testing.md) and [Go architecture](go-rewrite.md).
+The published release is [v0.2.0](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0),
+the Go/gabagool rewrite. This checkout still uses `0.2.0-dev` in the binary and
+package script, with a historical `v0.1.1` release trigger. Do not use that trigger
+to republish or replace assets. Host builds and fixture tests do not prove KNULLI
+compatibility; see the [device test guide](testing.md) and [Go architecture](go-rewrite.md).
 
 ## Orb setup
 
@@ -57,4 +61,9 @@ initialization, so selector and settings share the same licensed font.
 
 This follows the [KNULLI App Store setup](https://github.com/jellydn/knulli-app-store/blob/main/.agents/setup) and [check workflow](https://github.com/jellydn/knulli-app-store/blob/main/.github/workflows/check.yml) patterns. Its [original setup/CI thread](https://ampcode.com/threads/T-01a0a370-234b-729a-9b63-3871aa36a52c) records the method: inspect the environment, add repeatable setup, use shared checks, and verify locally before delivery. Action commit pins match the inspected App Store workflows; Go/catalogue commands do not belong in the picker build.
 
-The owner approved the public GitHub mirror, tested the corrected alpha.2 on TSP, and requested stable releases. `.github/workflows/release.yml` publishes only the `v0.1.1` tag, after host and device jobs pass; the publication job uploads the device job's exact bytes without rebuilding. Version 0.1.1 adds selector-first startup and still needs handheld retesting. Earlier releases remain unchanged. Do not replace published assets or move a published tag. A later version needs a reviewed version/trigger change. Stable release status does not close the full M0 hardware gates.
+In this checkout, `.github/workflows/release.yml` triggers only for `v0.1.1`,
+after host and device jobs pass. The publication job uploads the device job's
+exact bytes without rebuilding. This historical workflow does not describe the
+published v0.2.0 release process. Do not replace published assets or move a
+published tag. A future release needs a reviewed version/trigger change.
+Stable release status does not close the full M0 hardware gates.

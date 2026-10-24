@@ -55,12 +55,16 @@ on the UI thread and cannot navigate away from settings.
 
 ## Delivery and rollout
 
-The source identifies itself as `0.2.0-dev`; it does not replace `0.1.1` assets.
-The existing release trigger still targets only the historical `v0.1.1` tag and
-must not be used to publish this rewrite. Publication needs a separate reviewed
-version/trigger change after handheld tests. Go/cgo adds a firmware-provided
-SDL2_gfx dependency. No firmware libraries are bundled or overwritten.
+The Go rewrite is published as
+[v0.2.0](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
+This checkout still identifies itself as `0.2.0-dev`, and its release trigger
+targets only the historical `v0.1.1` tag. Local builds must not be presented as
+the published asset. A future release needs a separate reviewed version/trigger
+change. Go/cgo adds a firmware-provided SDL2_gfx dependency. No firmware libraries
+are bundled or overwritten. Earlier release assets are unchanged.
 
-The owner must retest on each handheld: physical buttons, boot/quit, real launch
-and return, configured emulator overrides, saves/history, and cold-start performance.
-Rollback means reinstalling the complete published 0.1.1 archive, preserving `state`.
+See the [device guide](testing.md) for the limited TSP development-build evidence
+and the remaining tests: physical buttons, normal launch/return, emulator
+overrides, saves/history, and cold-start performance on each handheld. MagicX
+remains unverified. Rollback means reinstalling the complete published 0.1.1
+archive, preserving `state`.
