@@ -14,10 +14,11 @@ if ((EUID != 0)); then elevate=(sudo); fi
   gcc-aarch64-linux-gnu pkg-config \
   libsdl2-dev:arm64 libsdl2-image-dev:arm64 libsdl2-ttf-dev:arm64 libsdl2-gfx-dev:arm64 \
   fonts-dejavu-core python3 zip file
+# Setup probes SDL too; a clean cross container has target, not native, SDL.
+export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
 ./.agents/setup
 export PATH="/usr/local/go/bin:$PATH"
 export GOFLAGS='-tags=nodefaultfont,nonextuifonts'
-export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
 mkdir -p build/aarch64/assets
 CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc \
   go build -trimpath -ldflags='-s -w' -o build/aarch64/random-game-picker ./cmd/random-game-picker
