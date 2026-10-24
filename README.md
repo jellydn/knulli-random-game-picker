@@ -1,8 +1,14 @@
 # KNULLI Random Game Picker
 
-A C++17 and SDL2 application that selects games from an existing KNULLI library. Target devices are the TrimUI Smart Pro and MagicX Zero 28.
+A Go and gabagool/v2 application that selects games from an existing KNULLI library. Target devices are the TrimUI Smart Pro and MagicX Zero 28.
 
-**Status: stable `0.1.1`, with selector-first startup.** The owner confirmed that the earlier corrected alpha.2 works on TrimUI Smart Pro; the new startup flow still needs handheld retesting. MagicX Zero 28 and the full hardware launch/return/performance matrix remain unverified. This release does not complete the full PRD MVP.
+**Source status: unreleased `0.2.0-dev` Go rewrite, KNULLI only.** Uses the selected
+centered-artwork console layout, gabagool settings, separate discovery/launcher,
+firmware/input profiles and typed picker state. No other CFW support is claimed.
+See [architecture and research](docs/go-rewrite.md) for scope and extension rules.
+This rewrite needs handheld retesting, including the new SDL2_gfx dependency.
+
+**Published release: stable `0.1.1` (C++), with selector-first startup.** The owner confirmed that the earlier corrected alpha.2 works on TrimUI Smart Pro; the new startup flow still needs handheld retesting. MagicX Zero 28 and the full hardware launch/return/performance matrix remain unverified. This release does not complete the full PRD MVP. Published assets remain unchanged.
 
 This release includes system/favorites filters, uniform random selection, preview of existing PNG/JPEG scraped artwork, reroll, session recent exclusion, controller navigation, and a single-submit ES launch handoff. It reads system configurations and gamelists, reconciles with the running ES catalogue, and never builds an emulator command or guesses a ROM directory.
 

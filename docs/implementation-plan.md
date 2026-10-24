@@ -1,6 +1,27 @@
 # Implementation plan — KNULLI Random Game Picker
 
-2026-10-19 · Proposed, not implemented · C++17 / SDL2
+2026-10-24 · Go rewrite approved · KNULLI only
+
+## Current implementation phases
+
+The owner replaced the original C++ proposal with Go and gabagool/v2, and selected
+the centered-artwork layout (concept B). The detailed 2026-10-19 plan below remains
+the historical PRD traceability record, not a claim that all its milestones shipped.
+
+1. Port configured ES discovery, live metadata, ambiguity exclusion, filtering,
+   uniform selection and bounded loopback IPC to Go. Verify with library and HTTP contracts.
+2. Separate firmware profile, semantic input mapping, picker state, discovery,
+   launcher and UI packages. Preserve KNULLI and Xbox face-button labels. Verify both layouts.
+3. Use gabagool initialization/settings with a compact centered-artwork selector.
+   Preserve selector-first startup, saved filters, recent reset, loading/error recovery
+   and focus. Inspect 640×480 and 1280×720 renders and keyboard interactions.
+4. Replace CMake with pinned Go/cgo host and AArch64 builds. Check Go format,
+   vet, race tests, SDL fixture tests, ELF dependencies and GLIBC versions.
+   Keep this as unreleased source; require device retesting before publication.
+
+See [Go architecture and research](go-rewrite.md) for the new boundaries and sources.
+
+## Historical milestone plan
 
 ## 1. Outcome and decision summary
 

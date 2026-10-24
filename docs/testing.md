@@ -1,5 +1,16 @@
 # Installation and testing — 0.1.1
 
+## Unreleased Go source (`0.2.0-dev`)
+
+The current source rewrites the app in Go with gabagool/v2 and the selected
+centered-artwork layout. It retains the controls, state keys and KNULLI launch
+contract below. It now requires firmware-provided **SDL2_gfx** in addition to
+SDL2/image/ttf, and writes a separate `state/ui.log` for toolkit diagnostics.
+Do not install on a device without checking the new ELF dependencies. This source
+is not covered by the earlier TSP report. Retest both handhelds before release.
+Only KNULLI is supported; `--firmware` rejects other names. See
+[Go architecture](go-rewrite.md) and [development](development.md).
+
 ## Requirements and scope
 
 This build targets TrimUI Smart Pro (1280×720) and MagicX Zero 28 (640×480). On 2026-10-19 the owner confirmed that alpha.2 works on TSP after the face-button correction and requested this stable release. Exact firmware details and the full matrix below were not supplied; MagicX remains unverified. It requires KNULLI, aarch64 glibc **2.36 or later**, and the firmware's SDL2, SDL2_image and SDL2_ttf. The package does not replace system libraries. Older firmware must be blocked, not bypassed.

@@ -1,6 +1,19 @@
 # Third-party notices
 
-The application is MIT licensed. Release packages include the original distribution copyright/license notices in `licenses/` for:
+The application is MIT licensed. The unreleased Go rewrite uses locked modules
+listed in `go.mod`/`go.sum`, including gabagool/v2 and go-sdl2 (MIT), Go libraries
+(BSD-style), and their transitive dependencies. `scripts/package-device` includes
+each downloaded module's LICENSE/COPYING/NOTICE files and the DejaVu font notice.
+Build tags omit gabagool's embedded fonts; the UI uses the packaged DejaVu Sans.
+The Go toolchain license is also included (https://go.dev/LICENSE).
+
+The new runtime dynamically requires SDL2_gfx as well as SDL2/image/ttf and glibc.
+These libraries are supplied by firmware, not bundled. Inspect `abi.txt` before use.
+No Grout source, ROM, commercial artwork or firmware image is bundled.
+
+## Historical C++ release 0.1.1
+
+Published 0.1.1 packages include original distribution copyright/license notices for:
 
 - pugixml (MIT), statically linked: https://pugixml.org/
 - nlohmann/json (MIT), compiled headers: https://github.com/nlohmann/json

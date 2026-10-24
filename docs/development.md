@@ -1,10 +1,10 @@
 # Development setup and CI
 
-The repository contains the first experimental application. Host builds and fixture tests do not prove KNULLI compatibility; see the [device test guide](testing.md).
+The source is now the unreleased Go/gabagool rewrite. Host builds and fixture tests do not prove KNULLI compatibility; see the [device test guide](testing.md) and [Go architecture](go-rewrite.md).
 
 ## Orb setup
 
-Amp runs executable `.agents/setup` in a fresh orb after the file reaches the project's default branch. It installs missing Debian/Ubuntu packages for C++, CMake, Ninja, pkg-config, SDL2/image/ttf, pugixml, nlohmann/json, Python/PyYAML, and ShellCheck. It skips package installation on warm runs. Run it manually with:
+Amp runs executable `.agents/setup` in a fresh orb after the file reaches the project's default branch. It installs missing Debian/Ubuntu packages for cgo, pkg-config, SDL2/image/ttf/gfx, Python/PyYAML, and ShellCheck, plus checksum-verified Go 1.26.0. It downloads the locked Go modules and skips package installation on warm runs. Run it manually with:
 
 ```sh
 ./.agents/setup
@@ -21,8 +21,8 @@ No credentials, services, or environment-file changes are required for the host 
 - Local Markdown file-link, whitespace, code-fence, and conflict-marker checks.
 - Required PRD acceptance, open-question, and milestone marker checks.
 - Workflow YAML parsing and full-commit action-pin checks. This is not a full GitHub Actions schema validator.
-- A temporary C++17 compile/link/load probe for the selected host dependencies. It opens no window and uses no controller or network. Temporary files are removed on exit.
-- CMake/Ninja application build and CTest contracts for library discovery, filtering, uniform selection, and real loopback HTTP transport with a fake ES server.
+- Go format, module integrity, vet and race-enabled tests for discovery, filtering, uniform selection, state and input contracts.
+- A Go/cgo host build and real loopback HTTP transport with a fake ES server. The test-only C++ shim injects SDL events; the app has no C++ implementation.
 
 For the SDL smoke test, install `xvfb`, `xdotool`, and `imagemagick`, then run:
 
@@ -30,7 +30,12 @@ For the SDL smoke test, install `xvfb`, `xdotool`, and `imagemagick`, then run:
 python3 tests/ui-smoke.py build/host/random-game-picker build/ui-smoke
 ```
 
-It starts a temporary X display and fake ES server, exercises both sizes and 100 rerolls per size, and verifies that the window closes before one exact-path launch request. A test-only preload library feeds logical SDL controller releases through the event queue: both default KNULLI and Xbox-layout modes must play with the first A after startup, reroll with X without a scan, open settings with Y, rescan with Y inside settings, return/quit with B, and quit with Start. The startup regression fails on published `0.1.0`, which needs a separate selection step. Saved-system/favorites fixtures also cover an empty intersection, valid saved selection, persistence, and an empty library without a launch or crash. Delayed discovery must not take focus from settings; a failed discovery must recover through settings/rescan. This does not simulate a physical controller driver or prove hardware mappings. It never starts an emulator. It needs loopback port 1234 free. Captures use synthetic games and artwork, not a real device library.
+It starts a temporary X display and fake ES server, exercises both sizes and 100 rerolls per size, and verifies that the window closes before one exact-path launch request. A test-only preload library feeds logical SDL presses/releases through the event queue: both default KNULLI and Xbox-layout modes must play with the first A after startup, reroll with X without a scan, open settings with Y, rescan with Y inside settings, return/quit with B, and quit with Start. Saved filters, empty pools, delayed/failed discovery and recovery remain covered. It does not simulate a physical controller driver, start an emulator or prove hardware mappings. It needs loopback port 1234 free. Captures use synthetic games and artwork.
+
+The suite also blocks stale selections, rejects unknown firmware, and verifies
+that demo mode does not scan, submit or save filters. It captures long-title and
+missing-art states. With `ffmpeg` installed, set `PICKER_UI_RECORD` to an absolute
+`.webm` path to record the 640×480 selector-to-settings keyboard interaction.
 
 For a desktop demo (launch and persistent writes disabled):
 
@@ -38,9 +43,13 @@ For a desktop demo (launch and persistent writes disabled):
 ./build/host/random-game-picker --demo --windowed --size 640x480
 ```
 
-Keyboard controls: arrows, Enter (A), Escape (B), X (reroll), Y (settings from selector; rescan inside settings). The demo also opens directly on a selected game, but never scans or launches. `--es-config DIR` selects a custom ES user configuration directory for fixture testing. `PICKER_STATE_DIR` selects app-owned settings/log state. No CLI option accepts an emulator command.
+Keyboard controls: arrows, Enter (A), Escape (B), X (reroll), Y (settings from selector; rescan inside settings), F10 (quit). The demo also opens directly on a selected game, but never scans, launches or saves filters. `--es-config DIR` selects a custom ES user configuration directory for fixture testing. `PICKER_STATE_DIR` selects app-owned settings/log state. No CLI option accepts an emulator command. The Go binary prints `0.2.0-dev`; other firmware profiles are rejected.
 
-Build an experimental AArch64 archive on Debian 12 with `./scripts/build-device`. This installs cross dependencies, builds with static pugixml/libstdc++/libgcc, inspects dynamic dependencies and GLIBC symbols, and calls `scripts/package-device`. The ZIP, checksum, exact sizes, inventory, and ELF report go under `build/release`. Archive entry ordering and timestamps are stable; toolchain/package versions can still change binary bytes, so manifests must use the exact published asset, not a later rebuild.
+Build an experimental AArch64 archive on Debian 12 with `./scripts/build-device`. This installs cross dependencies, builds Go with cgo/arm64, inspects dynamic dependencies and GLIBC symbols, and calls `scripts/package-device`. SDL2_gfx is now required in addition to SDL2/image/ttf. The dev ZIP, checksum, sizes, inventory, module licenses and ELF report go under `build/release`. It is not a published release or hardware compatibility proof.
+
+Both build scripts use `-tags=nodefaultfont,nonextuifonts` to omit unused gabagool
+fonts. The UI sets `FALLBACK_FONT` to the bundled DejaVu Sans before toolkit
+initialization, so selector and settings share the same licensed font.
 
 ## GitHub Actions
 

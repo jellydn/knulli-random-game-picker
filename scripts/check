@@ -12,36 +12,19 @@ shellcheck .agents/setup scripts/check scripts/build-device scripts/package-devi
 temporary="$(mktemp -d)"
 trap 'rm -rf "$temporary"' EXIT
 
-# This probe validates host headers and linking, not the application or a device.
-cat >"$temporary/dependencies.cpp" <<'CPP'
-#include <SDL.h>
-#include <SDL_image.h>
-#include <SDL_ttf.h>
-#include <pugixml.hpp>
-#include <nlohmann/json.hpp>
-#include <optional>
-
-int main() {
-    SDL_version version{};
-    SDL_GetVersion(&version);
-    const auto* image = IMG_Linked_Version();
-    const auto* font = TTF_Linked_Version();
-    pugi::xml_document document;
-    if (!document.load_string("<probe/>")) return 1;
-    const nlohmann::json data = {{"ready", true}};
-    const std::optional<bool> ready = data.at("ready").get<bool>();
-    return version.major == 2 && image && font && ready.value() ? 0 : 1;
-}
-CPP
-
-# pkg-config deliberately supplies separate compiler and linker arguments.
+export PATH="/usr/local/go/bin:$PATH"
+export GOFLAGS='-tags=nodefaultfont,nonextuifonts'
+test -z "$(gofmt -l cmd internal tests/http-client)"
+go mod verify
+go vet ./...
+go test -race ./...
+mkdir -p build/host/assets
+go build -trimpath -o build/host/random-game-picker ./cmd/random-game-picker
+go build -trimpath -o "$temporary/http-client" ./tests/http-client
+cp /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf build/host/assets/
+# This test-only shim injects logical SDL events, not raw hardware indices.
 # shellcheck disable=SC2046
-c++ -std=c++17 -Wall -Wextra -Werror "$temporary/dependencies.cpp" \
-  $(pkg-config --cflags --libs sdl2 SDL2_image SDL2_ttf pugixml) \
-  -o "$temporary/dependencies"
-"$temporary/dependencies"
-echo 'PASS: C++17 host dependency compile/link/load probe (no display or hardware test).'
-cmake -S . -B build/host -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build/host --parallel 2
-ctest --test-dir build/host --output-on-failure
+c++ -shared -fPIC tests/controller-events.cpp $(pkg-config --cflags --libs sdl2) -ldl -o build/host/libcontroller-events.so
+python3 tests/http-contract.py "$temporary/http-client"
+echo 'PASS: Go format, modules, vet, race tests, host build and loopback contract.'
 popd >/dev/null
