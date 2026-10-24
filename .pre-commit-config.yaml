@@ -1,0 +1,19 @@
+# Both prek and pre-commit read this file. Use the same checks as CI.
+default_install_hook_types: [pre-commit, pre-push]
+repos:
+  - repo: local
+    hooks:
+      - id: lint
+        name: Go, shell, workflow and document checks
+        language: system
+        entry: ./scripts/lint
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+      - id: race-tests
+        name: Go race tests
+        language: system
+        entry: env GOFLAGS=-tags=nodefaultfont,nonextuifonts go test -race ./...
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

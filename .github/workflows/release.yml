@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    tags: [v0.1.1]
+    tags: [v0.2.0]
 
 permissions:
   contents: read
@@ -24,6 +24,7 @@ jobs:
         with:
           name: ui-evidence
           path: build/ui-smoke/
+          if-no-files-found: error
   device:
     runs-on: ubuntu-24.04
     container: debian:bookworm
@@ -37,26 +38,32 @@ jobs:
         with:
           name: release-package
           path: build/release/
+          if-no-files-found: error
   publish:
     needs: [host, device]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: release-package
           path: release
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          name: ui-evidence
-          path: evidence
-      - name: Publish the tested bytes as a stable release
+      - name: Verify release identity and checksums
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          test "v$(jq -r .version release/artifact.json)" = "$TAG"
+          test "$(jq -r .asset release/artifact.json)" = "random-game-picker-${TAG#v}-knulli-aarch64.zip"
+          (cd release && sha256sum -c SHA256SUMS.txt)
+      - name: Publish the tested package without rebuilding
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" release/* evidence/*.png --verify-tag --latest \
-            --title "Random Game Picker $TAG" \
-            --notes 'Opens directly on a randomly selected game after discovery, using saved system/favorites filters. Press A to play, X to reroll, or Y for settings; Y inside settings rescans. Fixes the saved system being reset before discovery. Retains KNULLI/Xbox controller layouts, B back/quit, Start quit, and single-submit ES handoff. Update the complete package, including RandomGamePicker.sh, and preserve state. Requires aarch64 glibc 2.36+, SDL2/image/ttf and local ES HTTP. Host/controller fixtures and AArch64 ABI checks cover this version; the earlier TSP report does not verify v0.1.1. Retest on both handhelds. MagicX and the full launch/return/performance matrix remain unverified. Persistent library caching and Surprise Mode are not included. Read docs/testing.md for scope and limits.'
+          gh release create "$TAG" release/* --verify-tag --latest \
+            --title "Random Game Picker $TAG" --notes-file docs/release-0.2.0.md

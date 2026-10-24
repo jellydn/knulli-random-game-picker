@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version=0.1.1
+version=0.2.0
 output=build/release
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
@@ -10,9 +10,16 @@ cp build/aarch64/random-game-picker "$stage/"
 cp packaging/RandomGamePicker.sh LICENSE THIRD_PARTY.md "$stage/"
 cp docs/testing.md "$stage/README.md"
 cp build/aarch64/assets/DejaVuSans.ttf "$stage/assets/"
-for package in fonts-dejavu-core libpugixml-dev nlohmann-json3-dev libstdc++6; do
-  cp "/usr/share/doc/$package/copyright" "$stage/licenses/$package.txt"
-done
+cp /usr/share/doc/fonts-dejavu-core/copyright "$stage/licenses/fonts-dejavu-core.txt"
+export PATH="/usr/local/go/bin:$PATH"
+cp "$(go env GOROOT)/LICENSE" "$stage/licenses/go-LICENSE"
+while IFS= read -r directory; do
+  module=$(basename "$directory")
+  mkdir -p "$stage/licenses/$module"
+  for notice in "$directory"/LICENSE* "$directory"/COPYING* "$directory"/NOTICE*; do
+    if [[ -f "$notice" ]]; then cp "$notice" "$stage/licenses/$module/"; fi
+  done
+done < <(go list -m -f '{{if .Version}}{{.Dir}}{{end}}' all)
 chmod 755 "$stage/random-game-picker" "$stage/RandomGamePicker.sh"
 file "$stage/random-game-picker" >"$output/abi.txt"
 aarch64-linux-gnu-readelf -l -d --version-info "$stage/random-game-picker" >>"$output/abi.txt"
@@ -23,10 +30,10 @@ stage, output, version = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
 abi = (output / 'abi.txt').read_text()
 assert 'ARM aarch64' in abi and '/lib/ld-linux-aarch64.so.1' in abi
 needed = re.findall(r'Shared library: \[([^]]+)\]', abi)
-allowed = {'libSDL2-2.0.so.0', 'libSDL2_image-2.0.so.0', 'libSDL2_ttf-2.0.so.0', 'libc.so.6', 'libm.so.6', 'ld-linux-aarch64.so.1'}
+allowed = {'libSDL2-2.0.so.0', 'libSDL2_image-2.0.so.0', 'libSDL2_ttf-2.0.so.0', 'libSDL2_gfx-1.0.so.0', 'libc.so.6', 'libm.so.6', 'ld-linux-aarch64.so.1', 'libpthread.so.0', 'libdl.so.2'}
 assert set(needed) <= allowed, needed
 floor = max(set(re.findall(r'Name: GLIBC_([0-9.]+)', abi)), key=lambda s: tuple(map(int, s.split('.'))))
-assert tuple(map(int, floor.split('.'))) <= (2, 36), floor
+assert tuple(map(int, floor.split('.'))) <= (2, 34), floor
 archive = output / f'random-game-picker-{version}-knulli-aarch64.zip'
 files = sorted(p for p in stage.rglob('*') if p.is_file())
 with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:

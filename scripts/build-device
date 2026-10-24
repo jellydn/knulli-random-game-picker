@@ -11,13 +11,16 @@ if ((EUID != 0)); then elevate=(sudo); fi
 "${elevate[@]}" dpkg --add-architecture arm64
 "${elevate[@]}" apt-get update -qq
 "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  g++-aarch64-linux-gnu cmake ninja-build pkg-config libpugixml-dev:arm64 \
-  libsdl2-dev:arm64 libsdl2-image-dev:arm64 libsdl2-ttf-dev:arm64 \
-  nlohmann-json3-dev fonts-dejavu-core python3 zip file
-
-cmake -S . -B build/aarch64 -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_TOOLCHAIN_FILE=cmake/aarch64-linux-gnu.cmake -DBUILD_TESTING=OFF \
-  -DCMAKE_EXE_LINKER_FLAGS='-static-libstdc++ -static-libgcc'
-cmake --build build/aarch64 --parallel 2
+  gcc-aarch64-linux-gnu pkg-config \
+  libsdl2-dev:arm64 libsdl2-image-dev:arm64 libsdl2-ttf-dev:arm64 libsdl2-gfx-dev:arm64 \
+  fonts-dejavu-core python3 zip file
+./.agents/setup
+export PATH="/usr/local/go/bin:$PATH"
+export GOFLAGS='-tags=nodefaultfont,nonextuifonts'
+export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+mkdir -p build/aarch64/assets
+CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc \
+  go build -trimpath -ldflags='-s -w' -o build/aarch64/random-game-picker ./cmd/random-game-picker
+cp /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf build/aarch64/assets/
 aarch64-linux-gnu-strip build/aarch64/random-game-picker
 ./scripts/package-device

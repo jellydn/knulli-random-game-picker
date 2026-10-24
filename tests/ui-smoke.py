@@ -5,6 +5,7 @@ import http.server
 import json
 import os
 from pathlib import Path
+import signal
 import struct
 import subprocess
 import sys
@@ -21,6 +22,7 @@ reads = []
 other_active = False
 library_available = True
 api_unavailable = False
+fixture_title = 'A synthetic game for testing'
 scan_allowed = threading.Event()
 scan_allowed.set()
 
@@ -65,7 +67,7 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
                 if other_active and library_available:
                     data.append({'name': 'other', 'gamesystem': 'true', 'collection': 'false'})
             elif self.path == '/systems/fixture/games':
-                data = [{'path': str(rom), 'name': 'A synthetic game for testing', 'favorite': 'true'}]
+                data = [{'path': str(rom), 'name': fixture_title, 'favorite': 'true'}]
             elif self.path == '/systems/other/games':
                 data = [{'path': str(other_rom), 'name': 'Saved system game', 'favorite': 'false'}]
             else:
@@ -99,6 +101,7 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
         environment['DISPLAY'] = ':' + pipe.readline().strip()
     environment['PICKER_STATE_DIR'] = str(root / 'state')
     process = None
+    recording = None
 
     def wait_window():
         for _ in range(100):
@@ -119,7 +122,9 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
         raise AssertionError('Library scan did not finish')
 
     def key(window, name):
-        subprocess.run(['xdotool', 'key', '--window', window, name], env=environment, check=True, stderr=subprocess.DEVNULL)
+        # Use focused XTest events, not XSendEvent against a window which may
+        # close on key-down before xdotool can deliver key-up.
+        subprocess.run(['xdotool', 'windowfocus', '--sync', window, 'key', name], env=environment, check=True)
         time.sleep(0.1)
 
     def capture(window, state, size):
@@ -134,6 +139,8 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
         raise AssertionError('UI capture remained blank')
 
     try:
+        unknown = subprocess.run([str(binary), '--firmware', 'unverified'], env=environment, capture_output=True)
+        assert unknown.returncode == 1 and b'KNULLI only' in unknown.stderr
         # KNULLI's normal ES->SDL mapping swaps both face-button pairs.
         # Feed SDL events, not keyboard equivalents, to catch the reported bug.
         fifo = root / 'controller-input'
@@ -204,6 +211,15 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             for _ in range(100):
                 key(window, 'x')
             assert process.poll() is None, 'UI crashed during rerolls'
+            if size == '640x480' and os.getenv('PICKER_UI_RECORD'):
+                recording = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'x11grab',
+                    '-video_size', size, '-framerate', '20', '-i', environment['DISPLAY'] + '.0',
+                    '-c:v', 'libvpx-vp9', '-crf', '35', '-b:v', '0', os.environ['PICKER_UI_RECORD']], stdin=subprocess.PIPE)
+                time.sleep(0.4)
+                for pointer_x in range(55, 575, 20):
+                    subprocess.run(['xdotool', 'mousemove', '--sync', str(pointer_x), '451'], env=environment, check=True)
+                    time.sleep(0.04)
+                time.sleep(0.8)
             key(window, 'y')
             capture(window, 'settings', size)
             key(window, 'Down')
@@ -211,6 +227,11 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             capture(window, 'favorites', size)
             key(window, 'Down')
             key(window, 'Return')  # exclude recent
+            if recording:
+                time.sleep(0.8)
+                recording.communicate(input=b'q', timeout=10)
+                assert recording.returncode == 0
+                recording = None
             key(window, 'Up')
             key(window, 'Up')
             key(window, 'Return')
@@ -228,6 +249,38 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             assert requests[-1] == ('/launch', str(rom).encode(), 1), requests
             assert len(requests) == (1 if size == '1280x720' else 2), requests
             print(f'PASS: {size}, scraped-art preview, 100 rerolls, filters, empty pool, SDL teardown before one launch')
+
+        # A game disappearing between preview and Play must never be submitted.
+        # A long title must still leave platform/status/actions readable.
+        fixture_title = 'The remarkably long adventures of a synthetic hero across a relocated library with more words than fit on a single line'
+        for size in ('1280x720', '640x480'):
+            requests.clear()
+            (root / 'state/settings.json').unlink(missing_ok=True)
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 2)
+            capture(window, 'long-title', size)
+            library_available = False
+            key(window, 'Return')
+            wait_reads(before_reads + 3)
+            capture(window, 'stale-selection', size)
+            assert process.poll() is None and not requests, 'Stale selection bypassed revalidation'
+            key(window, 'F10')
+            assert process.wait(timeout=5) == 0 and not requests
+            library_available = True
+            before_reads = len(reads)
+            saved_bytes = (root / 'state/settings.json').read_bytes()
+            process = subprocess.Popen([str(binary), '--demo', '--windowed', '--size', size], env=environment)
+            window = wait_window()
+            time.sleep(0.4)
+            key(window, 'Return')
+            capture(window, 'demo-no-launch', size)
+            key(window, 'F10')
+            assert process.wait(timeout=5) == 0 and not requests and len(reads) == before_reads
+            assert (root / 'state/settings.json').read_bytes() == saved_bytes
+            print(f'PASS: {size}: stale selection blocked; demo does not scan, launch or save')
+        fixture_title = 'A synthetic game for testing'
 
         # The retained system contains only a nonfavorite; the other system has
         # a favorite. Ignoring either saved filter would make A launch a game.
@@ -292,7 +345,13 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             scan_allowed.set()
             wait_reads(before_reads + 3)
             key(window, 'Escape')
-            assert process.wait(timeout=5) == 0 and not requests, 'Discovery stole settings focus'
+            try:
+                assert process.wait(timeout=5) == 0 and not requests, 'Discovery stole settings focus'
+            except subprocess.TimeoutExpired:
+                capture(window, 'delayed-exit-timeout', size)
+                process.send_signal(signal.SIGQUIT)  # Go stack dump for a stuck UI.
+                process.wait(timeout=5)
+                raise
 
             api_unavailable = True
             before_reads = len(reads)
@@ -315,6 +374,8 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             print(f'PASS: {size}: settings remains open during discovery; unavailable library recovers by rescan')
     finally:
         scan_allowed.set()
+        if recording:
+            recording.communicate(input=b'q', timeout=10)
         if process and process.poll() is None:
             process.terminate()
             process.wait(timeout=8)

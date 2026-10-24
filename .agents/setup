@@ -2,9 +2,8 @@
 set -euo pipefail
 
 packages=(
-  build-essential cmake ninja-build pkg-config
-  libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
-  libpugixml-dev nlohmann-json3-dev
+  build-essential pkg-config curl ca-certificates
+  libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-gfx-dev
   python3 python3-yaml shellcheck fonts-dejavu-core
 )
 missing=()
@@ -26,9 +25,17 @@ else
   echo 'All host development packages are already installed.'
 fi
 
-c++ --version | head -n 1
-cmake --version | head -n 1
-ninja --version
-pkg-config --modversion sdl2 SDL2_image SDL2_ttf pugixml
-echo 'Host setup ready. Run ./scripts/check for documentation, shell, and dependency checks.'
-echo 'KNULLI cross-compilation and real-device validation remain M0/M1 work.'
+if [[ ! -x /usr/local/go/bin/go ]] || [[ "$(/usr/local/go/bin/go version)" != *'go1.26.0 '* ]]; then
+  temporary=$(mktemp -d)
+  trap 'rm -rf "$temporary"' EXIT
+  curl -fsSL https://go.dev/dl/go1.26.0.linux-amd64.tar.gz -o "$temporary/go.tar.gz"
+  echo "aac1b08a0fb0c4e0a7c1555beb7b59180b05dfc5a3d62e40e9de90cd42f88235  $temporary/go.tar.gz" | sha256sum -c -
+  elevate=()
+  if ((EUID != 0)); then elevate=(sudo); fi
+  "${elevate[@]}" tar -C /usr/local -xzf "$temporary/go.tar.gz"
+fi
+export PATH="/usr/local/go/bin:$PATH"
+go version
+go mod download
+pkg-config --modversion sdl2 SDL2_image SDL2_ttf SDL2_gfx
+echo 'Host setup ready. Run ./scripts/check. Hardware validation remains separate.'
