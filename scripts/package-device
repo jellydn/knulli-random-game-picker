@@ -21,6 +21,7 @@ while IFS= read -r directory; do
   done
 done < <(go list -m -f '{{if .Version}}{{.Dir}}{{end}}' all)
 chmod 755 "$stage/random-game-picker" "$stage/RandomGamePicker.sh"
+cp build/aarch64/build-info.txt "$output/build-info.txt"
 file "$stage/random-game-picker" >"$output/abi.txt"
 aarch64-linux-gnu-readelf -l -d --version-info "$stage/random-game-picker" >>"$output/abi.txt"
 /usr/bin/python3 - "$stage" "$output" "$version" <<'PY'
@@ -28,12 +29,19 @@ from pathlib import Path
 import hashlib, json, re, stat, sys, zipfile
 stage, output, version = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
 abi = (output / 'abi.txt').read_text()
-assert 'ARM aarch64' in abi and '/lib/ld-linux-aarch64.so.1' in abi
+if 'ARM aarch64' not in abi or '/lib/ld-linux-aarch64.so.1' not in abi:
+    sys.exit('Expected an AArch64 ELF with /lib/ld-linux-aarch64.so.1')
 needed = re.findall(r'Shared library: \[([^]]+)\]', abi)
 allowed = {'libSDL2-2.0.so.0', 'libSDL2_image-2.0.so.0', 'libSDL2_ttf-2.0.so.0', 'libSDL2_gfx-1.0.so.0', 'libc.so.6', 'libm.so.6', 'ld-linux-aarch64.so.1', 'libpthread.so.0', 'libdl.so.2'}
-assert set(needed) <= allowed, needed
-floor = max(set(re.findall(r'Name: GLIBC_([0-9.]+)', abi)), key=lambda s: tuple(map(int, s.split('.'))))
-assert tuple(map(int, floor.split('.'))) <= (2, 34), floor
+if not needed or not set(needed) <= allowed:
+    sys.exit(f'Unexpected ELF dependencies: {needed}')
+glibc_versions = set(re.findall(r'Name: GLIBC_([0-9.]+)', abi))
+if not glibc_versions:
+    sys.exit('No required GLIBC symbol versions found')
+floor = max(glibc_versions, key=lambda s: tuple(map(int, s.split('.'))))
+# v0.2.0 promises glibc 2.34+, even though the build host uses glibc 2.36.
+if tuple(map(int, floor.split('.'))) > (2, 34):
+    sys.exit(f'Required GLIBC_{floor} exceeds the published GLIBC_2.34 floor')
 archive = output / f'random-game-picker-{version}-knulli-aarch64.zip'
 files = sorted(p for p in stage.rglob('*') if p.is_file())
 with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:

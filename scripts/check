@@ -5,6 +5,7 @@ root="$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")"
 pushd "$root" >/dev/null
 
 ./scripts/lint
+python3 tests/package-device.py
 
 temporary="$(mktemp -d)"
 trap 'rm -rf "$temporary"' EXIT

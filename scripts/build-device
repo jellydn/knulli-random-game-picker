@@ -24,4 +24,25 @@ CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc \
   go build -trimpath -ldflags='-s -w' -o build/aarch64/random-game-picker ./cmd/random-game-picker
 cp /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf build/aarch64/assets/
 aarch64-linux-gnu-strip build/aarch64/random-game-picker
+# Capture the build environment now, not a potentially different packaging host.
+{
+  cat /etc/os-release
+  go version
+  go env GOFLAGS GOTOOLCHAIN
+  aarch64-linux-gnu-gcc -v 2>&1
+  aarch64-linux-gnu-ld --version
+  aarch64-linux-gnu-strip --version
+  printf '\nTarget SDL versions (sdl2, SDL2_image, SDL2_ttf, SDL2_gfx):\n'
+  pkg-config --modversion sdl2 SDL2_image SDL2_ttf SDL2_gfx
+  printf '\nInstalled build/package inputs (Debian package, version):\n'
+  dpkg-query -W -f='${binary:Package}\t${Version}\t${db:Status-Abbrev}\n' \
+    'gcc*-aarch64-linux-gnu*' binutils-aarch64-linux-gnu \
+    'libc6*' 'linux-libc-dev*' 'libsdl2*:arm64' \
+    fonts-dejavu-core pkg-config python3 zip file | awk '$3 == "ii" {print $1 "\t" $2}'
+  printf '\nGo module versions:\n'
+  go list -m all
+  printf '\nCompiled executable build settings:\n'
+  go version -m build/aarch64/random-game-picker
+} >build/aarch64/build-info.txt
+python3 tests/package-device.py
 ./scripts/package-device
