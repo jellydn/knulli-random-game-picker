@@ -1,13 +1,13 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-10-24
+**Analysis Date:** 2026-10-25
 
 ## Directory Layout
 
 ```text
 knulli-random-game-picker/
 ├── .agents/setup                 # Host toolchain and native dependencies
-├── .github/workflows/            # Host/device checks and historical release job
+├── .github/workflows/            # Host/device checks and gated v0.2.0 release
 ├── .planning/codebase/           # Codebase map documents
 ├── cmd/random-game-picker/       # Application main package
 ├── internal/
@@ -23,6 +23,7 @@ knulli-random-game-picker/
 │   ├── http-client/main.go       # Test executable for real transport calls
 │   ├── http-contract.py          # Fake server and HTTP assertions
 │   ├── ui-smoke.py               # Real SDL UI with fake ES and Xvfb
+│   ├── package-device.py         # Real packager with controlled ELF reports
 │   └── controller-events.cpp     # Test-only logical SDL event injection
 ├── docs/                         # Requirements, design, setup, and device checks
 ├── go.mod                        # Module name, Go version, direct dependencies
@@ -54,7 +55,7 @@ knulli-random-game-picker/
 **`internal/launcher/`:**
 - Purpose: Own loopback ES transport, not emulator commands.
 - Contains: Request bounds, HTTP response checks, GET fetch, and one exact-path POST adapter.
-- Key files: `internal/launcher/es.go`. Transport integration tests are outside this package in `tests/http-contract.py` and `tests/http-client/main.go`.
+- Key files: `internal/launcher/es.go`, `internal/launcher/es_test.go`. Additional transport integration tests are in `tests/http-contract.py` and `tests/http-client/main.go`.
 
 **`internal/library/`:**
 - Purpose: Own read-only catalogue construction and selection inputs.
@@ -93,7 +94,7 @@ knulli-random-game-picker/
 
 **`.agents/` and `.github/workflows/`:**
 - Purpose: Prepare the host and run automated checks or publication jobs.
-- Contains: Executable setup plus host/device check and historical release workflows.
+- Contains: Executable setup plus host/device check and gated `v0.2.0` release workflows.
 - Key files: `.agents/setup`, `.github/workflows/check.yml`, `.github/workflows/release.yml`.
 
 ## Key File Locations
@@ -111,8 +112,10 @@ knulli-random-game-picker/
 - `cmd/random-game-picker/main.go`: CLI flags such as `--assets`, `--demo`, `--windowed`, `--size`, and `--es-config`.
 - `packaging/RandomGamePicker.sh`: `PICKER_STATE_DIR` and layout selection from the Ports Xbox-layout flag.
 - `.github/workflows/check.yml`: Pull-request, main-push, and manual host/device checks.
-- `.github/workflows/release.yml`: Historical trigger restricted to `v0.1.1` in this checkout.
-- `scripts/package-device`: Local archive version `0.2.0-dev` and ABI/package rules.
+- `.github/workflows/release.yml`: Trigger restricted to `v0.2.0`, with tag/version/asset/checksum validation before publication.
+- `scripts/package-device`: Archive version `0.2.0`, GLIBC ceiling 2.34 and ABI/package rules; copies the build's `build-info.txt` provenance sidecar.
+- `scripts/lint` and `.pre-commit-config.yaml`: Shared local/CI checks and lint/race hook stages.
+- `tests/package-device.py`: Real packager tests with controlled ELF reports; `internal/launcher/es_test.go` tests live-loopback cancellation and invalid requests.
 - `renovate.json`: Dependency update configuration.
 
 **Core Logic:**
@@ -179,9 +182,9 @@ knulli-random-game-picker/
 - Committed: Not present in the source tree. A repository-root `state/` is not explicitly ignored by `.gitignore`.
 
 **`.planning/codebase/`:**
-- Purpose: This source map. Its scope is local checkout `95dda85`, not a map of published GitHub asset contents.
-- Generated: Yes, from source inspection in this documentation task.
-- Committed: New documentation in this refresh; no commit is made by this task. `.gitignore` does not exclude it.
+- Purpose: Source map refreshed after alignment with official GitHub main `da79d67`, including local audit changes. It is not a map of the public archive's contents.
+- Generated: Yes, from source inspection and local verification. `CONCERNS.md` records resolved findings and open hardware issues #6–#9.
+- Committed: Tracked project documentation; `.gitignore` does not exclude it. `scripts/check-docs.py` checks its hygiene and local links.
 
 **`.amp/portals/` and Python `__pycache__/`:**
 - Purpose: Orb portal metadata and Python bytecode caches, respectively (`.gitignore`).
@@ -190,4 +193,4 @@ knulli-random-game-picker/
 
 ---
 
-*Structure analysis: 2026-10-24*
+*Structure analysis: 2026-10-25*

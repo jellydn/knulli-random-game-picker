@@ -1,6 +1,6 @@
 # Technology Stack
 
-**Analysis Date:** 2026-10-24
+**Analysis Date:** 2026-10-25
 
 ## Languages
 
@@ -18,8 +18,8 @@
 **Environment:**
 - Native Linux application with Go and cgo. SDL needs the main OS thread; the entry point calls `runtime.LockOSThread()`. Evidence: `cmd/random-game-picker/main.go`, `scripts/build-device`.
 - KNULLI is the only supported firmware. Other profile names produce an error. Evidence: `internal/firmware/profile.go`.
-- Source checkout `95dda85` reports `0.2.0-dev`. Package version also remains `0.2.0-dev`. Evidence: `cmd/random-game-picker/main.go`, `scripts/package-device`.
-- Published version `v0.2.0` is separate from this checkout. GitHub lists it as published on 2026-10-24. Its asset is `random-game-picker-0.2.0-knulli-aarch64.zip`. Evidence: [release record](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
+- Source aligned with official GitHub main `da79d67` reports `0.2.0`; package version is also `0.2.0`. Audit changes are local, not a replacement published package. Evidence: `cmd/random-game-picker/main.go`, `scripts/package-device`.
+- Published version `v0.2.0` has asset `random-game-picker-0.2.0-knulli-aarch64.zip`. The audit checked its checksum and actual ELF, without executing it on hardware. Evidence: [release record](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
 
 **Package Manager:**
 - Go modules with Go 1.26.0. Dependency versions are in `go.mod`; integrity hashes are in `go.sum`. Evidence: `go.mod`, `.agents/setup`.
@@ -80,10 +80,10 @@
 **Production:**
 - KNULLI Linux AArch64 only. Target devices are TrimUI Smart Pro at 1280×720 and MagicX Zero 28 at 640×480. These targets do not imply complete hardware validation. Evidence: `README.md`, `docs/testing.md`, `internal/firmware/profile.go`.
 - The published `v0.2.0` binary requires glibc 2.34+ and SDL2/image/ttf/gfx. Its release notes describe limited TSP tests and list MagicX and full physical gameplay/return checks as unverified. Evidence: [published release notes](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
-- The checkout package check permits a maximum required GLIBC symbol version of 2.36. This is an ABI ceiling for its build gate, not the published binary's 2.34 floor. The actual generated floor is written to `artifact.json`. Evidence: `scripts/package-device`.
+- The package check permits a maximum required GLIBC symbol version of 2.34, matching the published floor. Explicit failures cannot be disabled by Python optimization. The actual ELF-derived floor is written to `artifact.json`; exact toolchain/package/module inputs go to `build-info.txt`. Evidence: `scripts/package-device`, `scripts/build-device`, `tests/package-device.py`.
 - ES must expose its local HTTP API during the Port session. Install the complete archive inside the configured Ports root and preserve `state/` on update. Evidence: `internal/launcher/es.go`, `packaging/RandomGamePicker.sh`, `docs/testing.md`.
-- The refreshed guides identify v0.2.0 as published, but the checkout release workflow triggers only on `v0.1.1`. Do not infer the v0.2.0 publication process from this workflow. Evidence: `README.md`, `docs/development.md`, `.github/workflows/release.yml`, [release record](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
+- Release workflow is pinned to `v0.2.0` and verifies tag/version/asset/checksums before publication. It does not authorize a new release from these local edits. Shared `scripts/lint` includes pinned actionlint; `.pre-commit-config.yaml` supplies lint/race hooks. Evidence: `.github/workflows/release.yml`, `scripts/lint`, `docs/development.md`.
 
 ---
 
-*Stack analysis: 2026-10-24*
+*Stack analysis: 2026-10-25*

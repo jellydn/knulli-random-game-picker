@@ -1,6 +1,6 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-10-24
+**Analysis Date:** 2026-10-25
 
 ## Naming Patterns
 
@@ -91,10 +91,14 @@
 
 ## Module Design
 
+**Shared maintenance gates:** `scripts/lint` runs formatting, vet, module checks, shell/document/workflow lint and pinned actionlint. `scripts/check` adds packager-policy tests, race tests, host/shim builds and HTTP contracts. `.pre-commit-config.yaml` shares lint/race stages with CI. Keep codemap links and limits current; `scripts/check-docs.py` now checks these map files too.
+
+**Safe optimization boundary:** Keep full fresh discovery before Play. Path identity reuse ends with one scan. Selector idle redraws are event-driven; SDL textures remain owned by the UI thread. Test symlink changes, both layouts/sizes and stale selections when touching these paths (`internal/library/library.go`, `internal/ui/run.go`, `tests/ui-smoke.py`).
+
 **Exports:** Keep application packages under `internal/`. The entry point connects firmware policy, discovery, state, UI, and launch submission. Export data types and functions needed at those boundaries (`cmd/random-game-picker/main.go`, `internal/firmware/profile.go`, `internal/library/library.go`).
 
 **Barrel Files:** Not used. Go files declare their package directly. There is no central re-export module in the inspected `cmd/` or `internal/` sources.
 
 ---
 
-*Convention analysis: 2026-10-24*
+*Convention analysis: 2026-10-25*

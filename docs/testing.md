@@ -68,10 +68,12 @@ Play rechecks the full live catalogue, closes SDL/input, submits the exact path 
 ## Known limits, not completed MVP claims
 
 - The owner confirmed that the corrected alpha.2 works on TSP. No completed launch/return matrix, configured-emulator success rate, Quick Resume/history proof, or cached-startup/performance measurements yet; MagicX remains unverified.
-- No persistent game-index cache. A background ES/config/XML read runs on startup/rescan and before Play. Selection uses an in-memory flat pool; artwork decodes synchronously for the selected game. The plan's M2 budgets are not claimed.
+- No persistent game-index cache. A background ES/config/XML read runs on startup/rescan and before Play. Path identities are reused within a scan only. Selection uses an in-memory flat pool; artwork still decodes synchronously for the selected game. The selector redraws on events/results rather than every idle poll. The plan's M2 budgets are not claimed.
 - Recent exclusion is session-only and optional; it never silently relaxes an empty pool. Reset recent selections to continue.
 - Favorites come from live ES metadata. Artwork comes from gamelist PNG/JPEG files capped at 8 MiB and 2048×2048; other/oversized/missing art uses a fallback.
 - No Surprise Mode in this release. No automatic system rescans, ES metadata writes, emulator selector, downloads, or self-updater.
+- Invalid or oversized settings fall back as a whole; a failed settings save still blocks the handoff. Source maintenance changes are not a replacement public v0.2.0 archive.
+- Hands-on blockers remain in [TSP controls/audio/hotkey return #6](https://github.com/jellydn/knulli-random-game-picker/issues/6), [overrides/second-system #7](https://github.com/jellydn/knulli-random-game-picker/issues/7), [MagicX #8](https://github.com/jellydn/knulli-random-game-picker/issues/8), and [device measurements #9](https://github.com/jellydn/knulli-random-game-picker/issues/9). Host/race/SDL and ABI checks do not close these issues.
 - Ports/virtual collections are excluded from selection; ambiguous paths shared by real systems are excluded to prevent multiple ES launches. Only games already loaded by ES are eligible.
 - The HTTP client expects Content-Length responses from the inspected ES API and fails closed on unsupported transfer encodings.
 

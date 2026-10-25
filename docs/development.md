@@ -61,7 +61,47 @@ For a desktop demo (launch and persistent writes disabled):
 
 Keyboard controls: arrows, Enter (A), Escape (B), X (reroll), Y (settings from selector; rescan inside settings), F10 (quit). The demo also opens directly on a selected game, but never scans, launches or saves filters. `--es-config DIR` selects a custom ES user configuration directory for fixture testing. `PICKER_STATE_DIR` selects app-owned settings/log state. No CLI option accepts an emulator command. The Go binary prints `0.2.0`; other firmware profiles are rejected.
 
-Build the AArch64 archive on Debian 12 with `./scripts/build-device`. This installs cross dependencies, builds Go with cgo/arm64, gates GLIBC at 2.34 or earlier, and calls `scripts/package-device`. SDL2_gfx is required in addition to SDL2/image/ttf. The ZIP, checksum, sizes, inventory, module licenses and ELF report go under `build/release`. A local rebuild is not automatically a published release or hardware compatibility proof.
+Build the AArch64 archive on Debian 12 with `./scripts/build-device`. This installs cross dependencies, builds Go with cgo/arm64, gates GLIBC at 2.34 or earlier, and calls `scripts/package-device`. SDL2_gfx is required in addition to SDL2/image/ttf. The ZIP, checksum, sizes, inventory, module licenses, ELF report and `build-info.txt` go under `build/release`. Build information records exact compiler/binutils, SDL, Debian package and Go module versions; it is provenance, not a pinned firmware sysroot or byte-reproducibility guarantee. A local rebuild is not automatically a published release or hardware compatibility proof.
+
+The full check and cross build run `python3 tests/package-device.py`. It exercises
+the real packager with controlled ELF reports, including GLIBC 2.35/2.36/2.40
+rejection under normal and optimized Python. Production gates use explicit
+failures, not assertions that `PYTHONOPTIMIZE` can remove. HTTP fixtures also
+reject malformed framing, redirects and timeouts without retrying a POST.
+
+### Performance audit
+
+The selector redraws on SDL events, scan results and settings return, not every
+idle poll. Text and eligible pools are rebuilt only for those redraws. Artwork
+still decodes synchronously on the SDL thread, with one retained texture and the
+existing byte/dimension bounds. No async SDL ownership or persistent cache was
+added. Startup, rescan and Play still perform full discovery; path identities
+are reused within each scan only. Symlink retargeting and cross-system ambiguity
+are regression-tested. Discovery checks cancellation during game processing.
+
+Run the host discovery benchmark with:
+
+```sh
+go test ./internal/library -run '^$' -bench BenchmarkDiscover -benchtime=3x -count=3
+```
+
+On this Debian 12 x86-64 orb, synthetic 10k/25k/50k catalogues with in-memory
+HTTP responses had median scan times of 166→113 ms, 420→304 ms and 988→709 ms
+before/after scan-local path reuse (three samples, three scans per sample).
+At 50k, allocations fell from about 246 MB/2.75 million to 188 MB/2.00 million
+per scan. These are not RSS, cold-start, real ES, SD-card or device latency
+measurements; do not use them to sign off the plan's budgets.
+Physical compatibility and precise performance remain tracked in issues
+[#6](https://github.com/jellydn/knulli-random-game-picker/issues/6),
+[#7](https://github.com/jellydn/knulli-random-game-picker/issues/7),
+[#8](https://github.com/jellydn/knulli-random-game-picker/issues/8) and
+[#9](https://github.com/jellydn/knulli-random-game-picker/issues/9).
+
+The SDL suite covers both controller layouts at both sizes and compares
+over-dimension/over-byte artwork with the corrupt-art fallback. To run the same
+suite with race instrumentation, build the host binary with `go build -race`
+and the normal font tags, then provide its adjacent assets and SDL shim. Neither
+host variant starts an emulator or proves physical controls/audio/return.
 
 Both build scripts use `-tags=nodefaultfont,nonextuifonts` to omit unused gabagool
 fonts. The UI sets `FALLBACK_FONT` to the bundled DejaVu Sans before toolkit

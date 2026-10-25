@@ -1,6 +1,6 @@
 # External Integrations
 
-**Analysis Date:** 2026-10-24
+**Analysis Date:** 2026-10-25
 
 ## APIs & External Services
 
@@ -42,6 +42,7 @@
 
 **Caching:**
 - No persistent library cache or external cache service. Startup, manual rescan, and launch verification read the catalogue. Selection uses an in-memory library and pool. Evidence: `internal/ui/run.go`, `internal/library/library.go`, `docs/testing.md`.
+- Path identities are reused only within one discovery call. A new Play/rescan resolves them again. Selector idle frames reuse the displayed result until an SDL event or state result arrives. Evidence: `internal/library/library.go`, `internal/ui/run.go`.
 - Recent selections retain at most ten paths in session memory. Artwork retains one selected texture until reset. Neither is a disk cache. Evidence: `internal/picker/state.go`, `internal/ui/canvas.go`.
 
 ## Authentication & Identity
@@ -67,13 +68,13 @@
 - Native app on KNULLI Linux AArch64; no hosted backend. Manual deployment extracts the complete flat archive to `RandomGamePicker` within the configured Ports root. Evidence: `scripts/package-device`, `packaging/RandomGamePicker.sh`, `docs/testing.md`.
 - The standard experimental App Store path is `/userdata/roms/ports/RandomGamePicker`. This checkout documents that integration but contains no Store manifest or Store client. Custom Ports roots need manual installation. Evidence: `docs/testing.md`, `README.md`.
 - GitHub published `v0.2.0` on 2026-10-24 with `random-game-picker-0.2.0-knulli-aarch64.zip`, `SHA256SUMS.txt`, `artifact.json`, `abi.txt`, and `archive-inventory.txt`. Evidence: [release record](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
-- Published `v0.2.0` requires glibc 2.34+ and SDL2/image/ttf/gfx. The checkout package gate instead rejects required GLIBC symbols above 2.36; that ceiling does not define the published binary's floor. Evidence: [release notes](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0), `scripts/package-device`.
+- Published `v0.2.0` requires glibc 2.34+ and SDL2/image/ttf/gfx. The checkout now matches official main and rejects required GLIBC symbols above 2.34, including when Python optimization is enabled. Build input versions are recorded in `build-info.txt`. Evidence: `scripts/package-device`, `scripts/build-device`, `tests/package-device.py`.
 
 **CI Pipeline:**
 - GitHub Actions check workflow: Pull requests, pushes to `main`, and manual dispatch run host checks/UI tests plus a Debian Bookworm AArch64 package build. Permissions are read-only; obsolete runs are cancelled. Evidence: `.github/workflows/check.yml`.
 - Host checks: Shell syntax, ShellCheck, local document/workflow checks, Go format/module verification/vet/race tests, host build, test shim build, and a real loopback HTTP fixture. Evidence: `scripts/check`, `scripts/check-docs.py`.
-- Checkout release workflow: Trigger is only tag `v0.1.1`. Host and device jobs must pass. Publication downloads their artifacts and uploads those bytes with `gh release create`; it does not rebuild. Only publication has `contents: write`. Evidence: `.github/workflows/release.yml`.
-- Version boundary: Source `95dda85` still reports `0.2.0-dev`. The refreshed README describes v0.2.0, but the release workflow retains its historical trigger. This checkout does not establish the workflow used to publish that release. Evidence: `cmd/random-game-picker/main.go`, `README.md`, `.github/workflows/release.yml`, [release record](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
+- Checkout release workflow: Trigger is only tag `v0.2.0`. Host/device jobs must pass; publication verifies tag/version/asset identity and checksums, then uploads those exact bytes without rebuilding. Only publication has `contents: write`. Evidence: `.github/workflows/release.yml`.
+- Version boundary: Source and packager use `0.2.0`. Local audit changes do not replace the stable public archive or authorize publication. Physical acceptance and precise device measurements remain in issues #6–#9. Evidence: `cmd/random-game-picker/main.go`, `README.md`, `.planning/codebase/CONCERNS.md`.
 
 ## Environment Configuration
 
@@ -97,4 +98,4 @@
 
 ---
 
-*Integration audit: 2026-10-24*
+*Integration audit: 2026-10-25*

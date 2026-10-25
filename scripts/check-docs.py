@@ -7,7 +7,8 @@ import yaml
 
 
 root = Path(__file__).resolve().parent.parent
-documents = [root / "README.md", *sorted((root / "docs").glob("*.md"))]
+documents = [root / "README.md", *sorted((root / "docs").glob("*.md")),
+             *sorted((root / ".planning/codebase").glob("*.md"))]
 required = {"prd.md", "implementation-plan.md", "development.md"}
 errors = []
 

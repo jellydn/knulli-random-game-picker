@@ -1,6 +1,6 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-10-24
+**Analysis Date:** 2026-10-25
 
 ## Test Framework
 
@@ -130,10 +130,10 @@ go tool cover -func=/tmp/picker-coverage.out
 go tool cover -html=/tmp/picker-coverage.out
 ```
 - These commands measure Go test execution only. They do not measure the Python-driven host UI run, packaging assertions, or device behavior (`scripts/check`, `tests/ui-smoke.py`, `scripts/package-device`).
-- Direct Go tests exist for input, library, and picker. There are no matching `_test.go` files for firmware, launcher, UI, or the application entry point in the inspected tree. Python tests exercise some of those paths (`tests/http-contract.py`, `tests/ui-smoke.py`).
-- Captures check that a rendered window has more than 16 colors. They are not image-baseline comparisons or proof that all text and controls fit (`tests/ui-smoke.py`).
+- Direct Go tests exist for input, library, picker and launcher. Firmware, UI and command paths are exercised by the real SDL/Python fixture rather than matching `_test.go` files (`tests/http-contract.py`, `tests/ui-smoke.py`, `internal/launcher/es_test.go`).
+- Captures check that a rendered window has more than 16 colors. Artwork rejection also compares its pixels with the corrupt-art fallback. There are no golden UI baselines; inspect representative captures for clipping and readability (`tests/ui-smoke.py`).
 - The map does not claim hardware, performance, or emulator success coverage. The full device matrix, MagicX behavior, startup budgets, and normal game return need separate evidence (`docs/testing.md`).
-- Source and packaging report `0.2.0-dev`; the release workflow still triggers only on `v0.1.1`. Do not use that workflow as evidence that this checkout was tested or published (`cmd/random-game-picker/main.go`, `scripts/package-device`, `.github/workflows/release.yml`).
+- Source/package version and release trigger match official main (`0.2.0` / `v0.2.0`). Local audit tests and builds do not replace or republish the stable archive (`cmd/random-game-picker/main.go`, `scripts/package-device`, `.github/workflows/release.yml`).
 
 ## Test Types
 
@@ -143,10 +143,12 @@ go tool cover -html=/tmp/picker-coverage.out
 - Library checks discovery contracts, filter intersection, duplicate exclusion, metadata fallback, title-uniform sampling, and empty/singleton pools (`internal/library/library_test.go`).
 
 **Integration Tests:**
-- The HTTP contract checks a GET response, a 404, exact plain-text launch bodies, truncated success responses, and no automatic resubmission (`tests/http-contract.py`).
+- The HTTP contract checks exact Unicode/metacharacter body bytes, escaped routes, fixed loopback despite proxy settings, HTTP/framing/size failures, redirects, disconnect/truncation/timeout and one POST without retry. Go tests cancel an accepted but unacknowledged launch (`tests/http-contract.py`, `internal/launcher/es_test.go`).
 - `scripts/check` also checks shell syntax, ShellCheck, documentation, action pins, Go formatting, module integrity, vet, race tests, and host builds. It compiles the SDL event shim but does not run the UI suite.
-- The device workflow cross-builds on Debian Bookworm. Packaging checks AArch64 ELF architecture, the loader, a dependency allowlist, and a maximum GLIBC requirement of 2.36. It writes archive inventory and checksum metadata; it does not run the device binary (`scripts/build-device`, `scripts/package-device`, `.github/workflows/check.yml`).
-- `scripts/check-docs.py` checks `README.md`, `docs/*.md`, and workflow files. It does not check these `.planning/codebase/` files or contact GitHub.
+- The device workflow cross-builds on Debian Bookworm. Packaging checks AArch64 architecture, loader, dependency allowlist and GLIBC ceiling 2.34 with explicit failures. Controlled ELF fixtures reject higher versions even under `PYTHONOPTIMIZE=1`; they also verify archive bytes/digest and build provenance. This does not run the device binary (`scripts/build-device`, `scripts/package-device`, `tests/package-device.py`).
+- `scripts/check-docs.py` checks `README.md`, `docs/*.md`, `.planning/codebase/*.md` and workflow files without contacting GitHub.
+- New discovery fixtures cover symlink ambiguity/retargeting, conflicting additive configuration, cancellation and the XML size boundary. Settings fixtures cover whole-document fallback, exact/oversized reads, failed writes/renames and recovery (`internal/library/library_test.go`, `internal/picker/state_test.go`).
+- SDL fixture layout checks now run both default KNULLI and Xbox at both target sizes. Artwork with invalid bytes, dimensions above 2048 or size above 8 MiB must render the same fallback. Both sizes still receive 100 rerolls (`tests/ui-smoke.py`).
 
 **E2E Tests:**
 - Host UI tests cover 1280×720 and 640×480, art and fallback, long titles, 100 rerolls per size, filters, empty pools, startup controls, delayed and failed scans, recovery, stale selections, and demo restrictions (`tests/ui-smoke.py`).
@@ -179,4 +181,4 @@ if _, err := library.Choose(nil, rng); err == nil {
 
 ---
 
-*Testing analysis: 2026-10-24*
+*Testing analysis: 2026-10-25*

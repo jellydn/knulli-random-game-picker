@@ -19,6 +19,22 @@ This release includes system/favorites filters, uniform random selection, previe
 
 **New in `0.1.1`:** the game selector opens after discovery, using saved filters. A plays the selected game; Y opens settings, where Y still rescans. Saved system selection is no longer reset before discovery. Earlier `0.1.0` opens filters first; its published assets remain unchanged.
 
+**Source maintenance audit (not a new release):** the checkout is aligned with
+official GitHub main. The selector now redraws on events/results rather than on
+every idle poll; discovery reuses resolved paths within each scan, never across
+Play verification. Invalid settings fall back as a whole. Packaging enforces
+GLIBC ≤2.34 even with Python optimization and records build input versions.
+The centered-artwork UI, both controller layouts and exact-path single-submit
+launch contract are unchanged. No public archive or tag was replaced.
+
+There is still no persistent library cache or Surprise Mode. Artwork decoding
+is bounded but synchronous; host benchmarks do not prove device budgets.
+Remaining hands-on checks are tracked in [TSP controls/audio/return #6](https://github.com/jellydn/knulli-random-game-picker/issues/6),
+[overrides/second system #7](https://github.com/jellydn/knulli-random-game-picker/issues/7),
+[MagicX #8](https://github.com/jellydn/knulli-random-game-picker/issues/8), and
+[precise device performance #9](https://github.com/jellydn/knulli-random-game-picker/issues/9).
+See the [audited codemap](.planning/codebase/CONCERNS.md) for each concern's status.
+
 - [Download releases](https://github.com/jellydn/knulli-random-game-picker/releases).
 - [Installation and testing](docs/testing.md): requirements, controls, logs, known limits, and the hardware report checklist.
 - [Development setup and CI](docs/development.md): host build/tests and AArch64 packaging.
