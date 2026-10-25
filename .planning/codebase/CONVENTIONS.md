@@ -37,7 +37,7 @@
 - `scripts/check` runs Bash and POSIX shell syntax checks, ShellCheck, `go mod verify`, and `go vet ./...`.
 - ShellCheck exclusions have a local explanation. Examples cover test-shim compiler flags in `scripts/check` and the OS-release read in `scripts/build-device`.
 - `scripts/check-docs.py` checks local links, final newlines, trailing spaces, code fences, conflict markers, required plan markers, workflow YAML, and full-commit action pins.
-- The document checker reads `README.md` and `docs/*.md`, not `.planning/codebase/*.md`. It is not a full GitHub Actions schema validator (`scripts/check-docs.py`, `docs/development.md`).
+- The document checker reads `README.md`, `docs/*.md`, and `.planning/codebase/*.md`. Shared lint also runs pinned actionlint for GitHub Actions schema and expression checks (`scripts/check-docs.py`, `scripts/lint`, `docs/development.md`).
 
 ## Import Organization
 

@@ -18,7 +18,7 @@
 **Environment:**
 - Native Linux application with Go and cgo. SDL needs the main OS thread; the entry point calls `runtime.LockOSThread()`. Evidence: `cmd/random-game-picker/main.go`, `scripts/build-device`.
 - KNULLI is the only supported firmware. Other profile names produce an error. Evidence: `internal/firmware/profile.go`.
-- Source aligned with official GitHub main `da79d67` reports `0.2.0`; package version is also `0.2.0`. Audit changes are local, not a replacement published package. Evidence: `cmd/random-game-picker/main.go`, `scripts/package-device`.
+- Source aligned with official GitHub main `da79d67` reports `0.2.1`; package version is also `0.2.1`. This maintenance release preserves prior public packages. Evidence: `cmd/random-game-picker/main.go`, `scripts/package-device`.
 - Published version `v0.2.0` has asset `random-game-picker-0.2.0-knulli-aarch64.zip`. The audit checked its checksum and actual ELF, without executing it on hardware. Evidence: [release record](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
 
 **Package Manager:**
@@ -82,7 +82,7 @@
 - The published `v0.2.0` binary requires glibc 2.34+ and SDL2/image/ttf/gfx. Its release notes describe limited TSP tests and list MagicX and full physical gameplay/return checks as unverified. Evidence: [published release notes](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
 - The package check permits a maximum required GLIBC symbol version of 2.34, matching the published floor. Explicit failures cannot be disabled by Python optimization. The actual ELF-derived floor is written to `artifact.json`; exact toolchain/package/module inputs go to `build-info.txt`. Evidence: `scripts/package-device`, `scripts/build-device`, `tests/package-device.py`.
 - ES must expose its local HTTP API during the Port session. Install the complete archive inside the configured Ports root and preserve `state/` on update. Evidence: `internal/launcher/es.go`, `packaging/RandomGamePicker.sh`, `docs/testing.md`.
-- Release workflow is pinned to `v0.2.0` and verifies tag/version/asset/checksums before publication. It does not authorize a new release from these local edits. Shared `scripts/lint` includes pinned actionlint; `.pre-commit-config.yaml` supplies lint/race hooks. Evidence: `.github/workflows/release.yml`, `scripts/lint`, `docs/development.md`.
+- Release workflow is pinned to the approved `v0.2.1` tag and verifies tag/version/asset/checksums before publication. Shared `scripts/lint` includes pinned actionlint; `.pre-commit-config.yaml` supplies lint/race hooks. Evidence: `.github/workflows/release.yml`, `scripts/lint`, `docs/development.md`.
 
 ---
 

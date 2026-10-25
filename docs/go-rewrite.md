@@ -55,29 +55,30 @@ on the UI thread and cannot navigate away from settings.
 
 ## Delivery and rollout
 
-The source identifies itself as `0.2.0`; it does not replace `0.1.1` assets.
-The owner accepted the TSP development-build evidence and approved this release.
-The `v0.2.0` tag runs host/device gates before publishing the exact built package.
-Go/cgo adds a firmware-provided SDL2_gfx dependency. No firmware libraries are
-bundled or overwritten. See [release notes](release-0.2.0.md) for evidence and limits.
+The source identifies itself as `0.2.1`, a compatible maintenance release over
+0.2.0. The `v0.2.1` tag runs host/device gates before publishing the exact built
+package. Earlier releases, tags and assets remain unchanged. The limited TSP
+device evidence belongs to 0.2.0; no new hardware result is claimed for 0.2.1.
+Firmware-provided SDL2_gfx remains required. No firmware libraries are bundled
+or overwritten. See [release notes](release-0.2.1.md) for evidence and limits.
 
 The owner must retest on each handheld: physical buttons, boot/quit, real launch
 and return, configured emulator overrides, saves/history, and cold-start performance.
-Rollback means reinstalling the complete published 0.1.1 archive, preserving `state`.
+Rollback means reinstalling a complete prior archive, preserving `state`.
 
 ## App Store asset contract
 
 The Store entry is `catalogue/packages/io.github.jellydn.random-game-picker.json`
-in knulli-app-store. Update its published `0.1.1` contract only after verifying
-the public `v0.2.0` asset against that release's checksums and metadata. Never pin
+in knulli-app-store. Update its current contract only after independently verifying
+the public `v0.2.1` asset against that release's checksums and metadata. Never pin
 a local development ZIP or use a mutable `latest` download alias.
 
 The current package contract is:
 
-| Field | Go 0.2.0 release |
+| Field | Go 0.2.1 release |
 |---|---|
-| Version / asset | `0.2.0` / `random-game-picker-0.2.0-knulli-aarch64.zip` |
-| Pinned URL | `https://github.com/jellydn/knulli-random-game-picker/releases/download/v0.2.0/random-game-picker-0.2.0-knulli-aarch64.zip` |
+| Version / asset | `0.2.1` / `random-game-picker-0.2.1-knulli-aarch64.zip` |
+| Pinned URL | `https://github.com/jellydn/knulli-random-game-picker/releases/download/v0.2.1/random-game-picker-0.2.1-knulli-aarch64.zip` |
 | Archive | Flat ZIP, `strip_components=0`; no enclosing directory |
 | Files | `RandomGamePicker.sh`, `random-game-picker`, `assets/DejaVuSans.ttf`, `licenses/`, `LICENSE`, `README.md`, `THIRD_PARTY.md` |
 | Destination | `/userdata/roms/ports/RandomGamePicker` (standard Ports root only) |
@@ -87,7 +88,7 @@ The current package contract is:
 | State schema | `settings.json`: `system` string and `favorites` boolean, unchanged from 0.1.1; atomic `settings.json.tmp` |
 | Logs | Per-session `state/last-run.log`, plus new toolkit `state/ui.log` |
 | Runtime | Linux AArch64; glibc 2.34+; `/lib/ld-linux-aarch64.so.1`; system SDL2/image/ttf/**gfx** and libc |
-| Metadata | `artifact.json`, `SHA256SUMS.txt`, `archive-inventory.txt`, `abi.txt` from the exact packaged bytes |
+| Metadata | `artifact.json`, `SHA256SUMS.txt`, `archive-inventory.txt`, `abi.txt` from the exact packaged bytes; `build-info.txt` for build provenance |
 
 For historical device-test traceability, the development ZIP had SHA-256
 `2411cbae57f44897ef1e69cc212a480f7fd8f8c5c64fbf235ecb6f6ac72c2c6c`,
@@ -102,4 +103,4 @@ license evidence (Go/module notices replace C++ runtime/header notices), warning
 and device-test evidence together. Retain the existing destination, menu path,
 executables, network declaration and preserve rule. Store dependency detection
 must recognize firmware SDL2_gfx before offering installation. Use the published
-`artifact.json` and `SHA256SUMS.txt` under the same `v0.2.0` release URL prefix.
+`artifact.json` and `SHA256SUMS.txt` under the same `v0.2.1` release URL prefix.

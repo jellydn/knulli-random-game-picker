@@ -74,7 +74,7 @@
 - [#7](https://github.com/jellydn/knulli-random-game-picker/issues/7): effective real emulator/core override and second-system handoff against direct ES controls.
 - [#8](https://github.com/jellydn/knulli-random-game-picker/issues/8): real MagicX Zero 28 dependency/display/input/audio/gameplay/return acceptance.
 - [#9](https://github.com/jellydn/knulli-random-game-picker/issues/9): precise device cold/warm start, input-to-visible latency, CPU/RSS trends and long sessions. Orb benchmarks and 100-reroll fixtures do not close it.
-- The public stable package has only the limited TSP evidence described in its release notes. These source changes have host/cross-build evidence only. No hardware, release, deployment or updated public-package claim follows from this audit.
+- The 0.2.1 maintenance release uses the gated host/cross-build workflow and preserves all prior public packages. Its source changes have host/cross-build evidence only; earlier limited TSP evidence belongs to 0.2.0. No new hardware or completed device-performance claim follows from publication (`docs/release-0.2.1.md`).
 
 ---
 

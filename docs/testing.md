@@ -1,13 +1,13 @@
-# Installation and testing — 0.2.0
+# Installation and testing — 0.2.1
 
 ## Go/gabagool release
 
 The current source rewrites the app in Go with gabagool/v2 and the selected
 centered-artwork layout. It retains the controls, state keys and KNULLI launch
-contract below. It now requires firmware-provided **SDL2_gfx** in addition to
+contract below. As in 0.2.0, it requires firmware-provided **SDL2_gfx** in addition to
 SDL2/image/ttf, and writes a separate `state/ui.log` for toolkit diagnostics.
 Do not install on a device without checking the new ELF dependencies. TSP
-development-build testing covers dependency resolution, rendering, injected
+0.2.0 development-build testing covers dependency resolution, rendering, injected
 controller events, rerolls, exact-path handoff and ES restoration. Physical
 buttons, audible audio, normal gameplay/hotkey return and MagicX remain unverified.
 Only KNULLI is supported; `--firmware` rejects other names. See
@@ -19,7 +19,7 @@ This build targets TrimUI Smart Pro (1280×720) and MagicX Zero 28 (640×480).
 It requires KNULLI, aarch64 glibc **2.34 or later**, and the firmware's SDL2,
 SDL2_image, SDL2_ttf and SDL2_gfx. The package does not replace system libraries.
 Older or missing dependencies must be blocked, not bypassed. See the
-[release notes](release-0.2.0.md) for exact test scope and remaining limits.
+[release notes](release-0.2.1.md) for exact test scope and remaining limits.
 
 Runtime reads ES system configurations, `gamelist.xml` artwork paths, and the running ES catalogue through local `127.0.0.1:1234` HTTP. The local API must be available while a Port runs. Public Web Access and Internet access are not required. No DNS, redirects, downloads, telemetry, accounts, or non-loopback endpoints are used. The App Store manifest declares network use because loopback sockets are still network API use.
 
@@ -35,7 +35,7 @@ The launcher resolves its own directory, inherits KNULLI's SDL mappings, and wri
 
 ## Controls
 
-### Version `0.2.0` — selector-first flow retained from `0.1.1`
+### Version `0.2.1` — selector-first flow retained from `0.1.1`
 
 After discovery, the selector shows a random game using your saved system and favorites filters. Startup does not launch a game. Press A once to play, X to reroll, or Y to open the existing settings/filters screen. If the library or filters have no eligible games, Play is unavailable; Y still opens settings so you can change filters or rescan.
 
@@ -45,7 +45,7 @@ After discovery, the selector shows a random game using your saved system and fa
 - B from the selector returns to settings; B from settings quits. Start still quits globally.
 - The saved system and favorites values are applied before the first selection and retained on exit. Recent exclusion remains session-only.
 
-Retest first-press Play, Y settings/rescan, B back/quit, and saved filters on each handheld. Install the complete `0.2.0` archive and preserve `state`; do not replace just the binary. Earlier release assets remain unchanged.
+Retest first-press Play, Y settings/rescan, B back/quit, and saved filters on each handheld. Install the complete `0.2.1` archive and preserve `state`; do not replace just the binary. Earlier release assets remain unchanged.
 
 ### Published `0.1.0` — filters-first flow
 
@@ -72,7 +72,7 @@ Play rechecks the full live catalogue, closes SDL/input, submits the exact path 
 - Recent exclusion is session-only and optional; it never silently relaxes an empty pool. Reset recent selections to continue.
 - Favorites come from live ES metadata. Artwork comes from gamelist PNG/JPEG files capped at 8 MiB and 2048×2048; other/oversized/missing art uses a fallback.
 - No Surprise Mode in this release. No automatic system rescans, ES metadata writes, emulator selector, downloads, or self-updater.
-- Invalid or oversized settings fall back as a whole; a failed settings save still blocks the handoff. Source maintenance changes are not a replacement public v0.2.0 archive.
+- Invalid or oversized settings fall back as a whole; a failed settings save still blocks the handoff. Version 0.2.1 is a separate maintenance release, not a replacement v0.2.0 archive.
 - Hands-on blockers remain in [TSP controls/audio/hotkey return #6](https://github.com/jellydn/knulli-random-game-picker/issues/6), [overrides/second-system #7](https://github.com/jellydn/knulli-random-game-picker/issues/7), [MagicX #8](https://github.com/jellydn/knulli-random-game-picker/issues/8), and [device measurements #9](https://github.com/jellydn/knulli-random-game-picker/issues/9). Host/race/SDL and ABI checks do not close these issues.
 - Ports/virtual collections are excluded from selection; ambiguous paths shared by real systems are excluded to prevent multiple ES launches. Only games already loaded by ES are eligible.
 - The HTTP client expects Content-Length responses from the inspected ES API and fails closed on unsupported transfer encodings.

@@ -7,7 +7,7 @@
 ```text
 knulli-random-game-picker/
 ├── .agents/setup                 # Host toolchain and native dependencies
-├── .github/workflows/            # Host/device checks and gated v0.2.0 release
+├── .github/workflows/            # Host/device checks and gated v0.2.1 release
 ├── .planning/codebase/           # Codebase map documents
 ├── cmd/random-game-picker/       # Application main package
 ├── internal/
@@ -94,7 +94,7 @@ knulli-random-game-picker/
 
 **`.agents/` and `.github/workflows/`:**
 - Purpose: Prepare the host and run automated checks or publication jobs.
-- Contains: Executable setup plus host/device check and gated `v0.2.0` release workflows.
+- Contains: Executable setup plus host/device check and gated `v0.2.1` release workflows.
 - Key files: `.agents/setup`, `.github/workflows/check.yml`, `.github/workflows/release.yml`.
 
 ## Key File Locations
@@ -112,8 +112,8 @@ knulli-random-game-picker/
 - `cmd/random-game-picker/main.go`: CLI flags such as `--assets`, `--demo`, `--windowed`, `--size`, and `--es-config`.
 - `packaging/RandomGamePicker.sh`: `PICKER_STATE_DIR` and layout selection from the Ports Xbox-layout flag.
 - `.github/workflows/check.yml`: Pull-request, main-push, and manual host/device checks.
-- `.github/workflows/release.yml`: Trigger restricted to `v0.2.0`, with tag/version/asset/checksum validation before publication.
-- `scripts/package-device`: Archive version `0.2.0`, GLIBC ceiling 2.34 and ABI/package rules; copies the build's `build-info.txt` provenance sidecar.
+- `.github/workflows/release.yml`: Trigger restricted to `v0.2.1`, with tag/version/asset/checksum validation before publication.
+- `scripts/package-device`: Archive version `0.2.1`, GLIBC ceiling 2.34 and ABI/package rules; copies the build's `build-info.txt` provenance sidecar.
 - `scripts/lint` and `.pre-commit-config.yaml`: Shared local/CI checks and lint/race hook stages.
 - `tests/package-device.py`: Real packager tests with controlled ELF reports; `internal/launcher/es_test.go` tests live-loopback cancellation and invalid requests.
 - `renovate.json`: Dependency update configuration.

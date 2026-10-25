@@ -133,7 +133,7 @@ go tool cover -html=/tmp/picker-coverage.out
 - Direct Go tests exist for input, library, picker and launcher. Firmware, UI and command paths are exercised by the real SDL/Python fixture rather than matching `_test.go` files (`tests/http-contract.py`, `tests/ui-smoke.py`, `internal/launcher/es_test.go`).
 - Captures check that a rendered window has more than 16 colors. Artwork rejection also compares its pixels with the corrupt-art fallback. There are no golden UI baselines; inspect representative captures for clipping and readability (`tests/ui-smoke.py`).
 - The map does not claim hardware, performance, or emulator success coverage. The full device matrix, MagicX behavior, startup budgets, and normal game return need separate evidence (`docs/testing.md`).
-- Source/package version and release trigger match official main (`0.2.0` / `v0.2.0`). Local audit tests and builds do not replace or republish the stable archive (`cmd/random-game-picker/main.go`, `scripts/package-device`, `.github/workflows/release.yml`).
+- Source/package version and approved release trigger match (`0.2.1` / `v0.2.1`). The new maintenance archive does not replace prior releases; publication waits for host/device gates (`cmd/random-game-picker/main.go`, `scripts/package-device`, `.github/workflows/release.yml`).
 
 ## Test Types
 

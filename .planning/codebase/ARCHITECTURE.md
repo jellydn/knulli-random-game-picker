@@ -10,7 +10,7 @@
 - The command connects concrete packages. There is no service container or general router (`cmd/random-game-picker/main.go`).
 - The UI uses a typed state model. Background scans return data through a channel. The UI thread applies each result (`internal/picker/state.go`, `internal/ui/run.go`).
 - ES owns the running game catalogue and emulator launch. The picker reads existing files and sends one exact-path request after SDL closes (`internal/library/library.go`, `internal/launcher/es.go`).
-- This map describes the audit changes after alignment with official GitHub main `da79d67`. Binary/package version is `0.2.0`; release trigger is `v0.2.0`. The local audit changes are not a new published release (`cmd/random-game-picker/main.go`, `scripts/package-device`, `.github/workflows/release.yml`).
+- This map describes the 0.2.1 maintenance changes after alignment with official GitHub main `da79d67`. Binary/package version is `0.2.1`; release trigger is `v0.2.1`. Prior releases and assets are preserved (`cmd/random-game-picker/main.go`, `scripts/package-device`, `.github/workflows/release.yml`).
 - GitHub [v0.2.0](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0) is published. Its archive checksum and actual ELF dependency/GLIBC report were checked, but the published binary was not run on hardware here.
 - The selector redraws after events and scan results, not on every idle poll. Artwork decoding remains synchronous on the SDL thread. Discovery reuses path identities within each scan only; Play still performs full fresh discovery (`internal/ui/run.go`, `internal/ui/canvas.go`, `internal/library/library.go`).
 
@@ -94,7 +94,7 @@
 1. `.agents/setup` prepares the Go/cgo host environment. `scripts/check` calls shared `scripts/lint`, then package-policy tests, race tests, the host build and loopback contracts. `.pre-commit-config.yaml` shares lint/race checks with CI.
 2. `tests/ui-smoke.py` runs the real host UI with a fake ES server and synthetic files under Xvfb. `tests/controller-events.cpp` injects logical SDL events, not hardware events.
 3. `scripts/build-device` cross-builds for Linux arm64 on Debian 12 and records exact inputs in `build-info.txt`. `scripts/package-device` checks the ELF library allowlist and GLIBC ceiling of 2.34 with explicit non-assertion failures, then writes the archive and reports.
-4. `.github/workflows/check.yml` runs host and device jobs. `.github/workflows/release.yml` permits only `v0.2.0`, verifies identity/checksums, and uploads the tested device bytes without rebuilding. This audit does not trigger publication.
+4. `.github/workflows/check.yml` runs host and device jobs. `.github/workflows/release.yml` permits only `v0.2.1`, verifies identity/checksums, and uploads the tested device bytes without rebuilding. The approved tag starts publication only after both gates pass.
 
 **State Management:**
 - `State` owns the in-memory library, selected index, view, operation, focus, notice, random generator, and last ten picks (`internal/picker/state.go`).

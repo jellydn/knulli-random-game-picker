@@ -73,8 +73,8 @@
 **CI Pipeline:**
 - GitHub Actions check workflow: Pull requests, pushes to `main`, and manual dispatch run host checks/UI tests plus a Debian Bookworm AArch64 package build. Permissions are read-only; obsolete runs are cancelled. Evidence: `.github/workflows/check.yml`.
 - Host checks: Shell syntax, ShellCheck, local document/workflow checks, Go format/module verification/vet/race tests, host build, test shim build, and a real loopback HTTP fixture. Evidence: `scripts/check`, `scripts/check-docs.py`.
-- Checkout release workflow: Trigger is only tag `v0.2.0`. Host/device jobs must pass; publication verifies tag/version/asset identity and checksums, then uploads those exact bytes without rebuilding. Only publication has `contents: write`. Evidence: `.github/workflows/release.yml`.
-- Version boundary: Source and packager use `0.2.0`. Local audit changes do not replace the stable public archive or authorize publication. Physical acceptance and precise device measurements remain in issues #6–#9. Evidence: `cmd/random-game-picker/main.go`, `README.md`, `.planning/codebase/CONCERNS.md`.
+- Checkout release workflow: Trigger is only tag `v0.2.1`. Host/device jobs must pass; publication verifies tag/version/asset identity and checksums, then uploads those exact bytes without rebuilding. Only publication has `contents: write`. Evidence: `.github/workflows/release.yml`.
+- Version boundary: Source and packager use `0.2.1`. This separate maintenance release does not replace prior public archives. Physical acceptance and precise device measurements remain in issues #6–#9. Evidence: `cmd/random-game-picker/main.go`, `README.md`, `.planning/codebase/CONCERNS.md`.
 
 ## Environment Configuration
 

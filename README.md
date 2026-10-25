@@ -2,25 +2,26 @@
 
 A Go and gabagool/v2 application that selects games from an existing KNULLI library. Target devices are the TrimUI Smart Pro and MagicX Zero 28.
 
-**Version `0.2.0`: Go/gabagool rewrite, KNULLI only.** Uses the selected
+**Version `0.2.1`: Go/gabagool maintenance release, KNULLI only.** Uses the selected
 centered-artwork console layout, gabagool settings, separate discovery/launcher,
 firmware/input profiles and typed picker state. No other CFW support is claimed.
 See [architecture and research](docs/go-rewrite.md) for scope and extension rules.
 Requires firmware SDL2/image/ttf/**gfx** and aarch64 glibc **2.34+**.
 
-TSP development-build testing verified dependency resolution, selector/settings,
+Earlier 0.2.0 TSP development-build testing verified dependency resolution, selector/settings,
 injected controller events under both effective layouts, 100 paced rerolls,
 exact-path emulator handoff and ES display restoration. Physical buttons,
 audible audio, normal gameplay/hotkey return and MagicX remain unverified.
 See the [0.2.0 release notes](docs/release-0.2.0.md) for evidence and limits.
-The existing `0.1.1` C++ release and its assets are unchanged.
+The existing `0.2.0` and earlier releases and their assets are unchanged.
+See the [0.2.1 release notes](docs/release-0.2.1.md) for this maintenance release;
+no new hardware validation is claimed.
 
 This release includes system/favorites filters, uniform random selection, preview of existing PNG/JPEG scraped artwork, reroll, session recent exclusion, controller navigation, and a single-submit ES launch handoff. It reads system configurations and gamelists, reconciles with the running ES catalogue, and never builds an emulator command or guesses a ROM directory.
 
 **New in `0.1.1`:** the game selector opens after discovery, using saved filters. A plays the selected game; Y opens settings, where Y still rescans. Saved system selection is no longer reset before discovery. Earlier `0.1.0` opens filters first; its published assets remain unchanged.
 
-**Source maintenance audit (not a new release):** the checkout is aligned with
-official GitHub main. The selector now redraws on events/results rather than on
+**New in `0.2.1`:** the selector redraws on events/results rather than on
 every idle poll; discovery reuses resolved paths within each scan, never across
 Play verification. Invalid settings fall back as a whole. Packaging enforces
 GLIBC ≤2.34 even with Python optimization and records build input versions.
