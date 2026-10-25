@@ -65,6 +65,7 @@ func Run(ctx context.Context, options Options, state *picker.State, scan Scanner
 	defer canvas.close()
 	var pending <-chan scanResult
 	var verifying, launch *library.Game
+	dirty := true
 	startScan := func() {
 		state.Selected = -1
 		state.Ready = false
@@ -80,6 +81,7 @@ func Run(ctx context.Context, options Options, state *picker.State, scan Scanner
 		}
 		select {
 		case result := <-pending:
+			dirty = true
 			pending = nil
 			canvas.resetArt()
 			if verifying != nil {
@@ -116,9 +118,12 @@ func Run(ctx context.Context, options Options, state *picker.State, scan Scanner
 				return nil, err
 			}
 			canvas.resetArt()
+			dirty = true
 			continue
 		}
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			// Include window expose/resize events, not only semantic input.
+			dirty = true
 			// gabagool owns opened controllers; SDL's inherited database remains authoritative.
 			switch e := event.(type) {
 			case *sdl.ControllerDeviceEvent:
@@ -163,7 +168,10 @@ func Run(ctx context.Context, options Options, state *picker.State, scan Scanner
 				go func() { lib, err := scan(ctx); ch <- scanResult{lib, err} }()
 			}
 		}
-		canvas.draw(state, options)
+		if dirty {
+			canvas.draw(state, options)
+			dirty = false
+		}
 		if options.Screenshot != "" && state.Ready {
 			if err := canvas.capture(options.Screenshot); err != nil {
 				return nil, err

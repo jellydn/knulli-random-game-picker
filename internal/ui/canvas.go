@@ -121,6 +121,7 @@ func (c *canvas) draw(state *picker.State, options Options) {
 	}
 	c.text(badge, 52, c.width-48, mint, false)
 	game := state.Game()
+	poolSize := len(state.Pool())
 	if game != nil {
 		if game.Image != c.artPath {
 			if c.art != nil {
@@ -163,7 +164,7 @@ func (c *canvas) draw(state *picker.State, options Options) {
 			c.text(second, 306, c.width-48, white, true)
 		}
 		c.text(game.SystemLabel, 340, c.width-48, mint, false)
-		label := fmt.Sprintf("%d eligible games", len(state.Pool()))
+		label := fmt.Sprintf("%d eligible games", poolSize)
 		if game.Favorite {
 			label = "FAVORITE  /  " + label
 		}
@@ -197,7 +198,7 @@ func (c *canvas) draw(state *picker.State, options Options) {
 		color  sdl.Color
 	}{{input.Confirm, play, color}, {input.Reroll, "Reroll", white}, {input.Settings, "Settings", white}, {input.Back, "Filters", white}}
 	for i, hint := range hints {
-		if state.Operation == picker.Verifying || (hint.action == input.Reroll && (!state.Ready || len(state.Pool()) == 0)) {
+		if state.Operation == picker.Verifying || (hint.action == input.Reroll && (!state.Ready || poolSize == 0)) {
 			hint.color = muted
 		}
 		surface, err := c.body.RenderUTF8Blended(hint.action.VirtualButton().GetName()+" "+hint.text, hint.color)

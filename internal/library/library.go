@@ -100,6 +100,16 @@ func exists(path string) bool { _, err := os.Stat(path); return err == nil }
 
 func Discover(ctx context.Context, loc Locations, fetch Fetch) (Library, error) {
 	var result Library
+	// Reuse path identity only within this scan. Play always starts a fresh scan.
+	identities := map[string]string{}
+	canonical := func(path string) string {
+		if key, ok := identities[path]; ok {
+			return key
+		}
+		key := identity(path)
+		identities[path] = key
+		return key
+	}
 	var systems systemList
 	base := ""
 	for _, path := range []string{filepath.Join(loc.User, "es_systems_custom.cfg"), filepath.Join(loc.User, "es_systems.cfg"), filepath.Join(loc.Shared, "es_systems.cfg"), filepath.Join(loc.Legacy, "es_systems.cfg")} {
@@ -166,7 +176,7 @@ func Discover(ctx context.Context, loc Locations, fetch Fetch) (Library, error) 
 	}
 	counts := map[string]int{}
 	executable, _ := os.Executable()
-	ownLauncher := identity(filepath.Join(filepath.Dir(executable), "RandomGamePicker.sh"))
+	ownLauncher := canonical(filepath.Join(filepath.Dir(executable), "RandomGamePicker.sh"))
 	for _, liveSystem := range liveSystems {
 		if err := ctx.Err(); err != nil {
 			return result, err
@@ -207,17 +217,20 @@ func Discover(ctx context.Context, loc Locations, fetch Fetch) (Library, error) 
 					result.Warnings = append(result.Warnings, err.Error())
 				} else {
 					for _, game := range list.Games {
-						meta[identity(resolve(game.Path, root, loc.Home))] = game
+						meta[canonical(resolve(game.Path, root, loc.Home))] = game
 					}
 				}
 			}
 		}
 		for _, liveGame := range games {
+			if err := ctx.Err(); err != nil {
+				return Library{}, err
+			}
 			path := liveGame.text("path")
 			if path == "" || len(path) > 4096 || strings.ContainsRune(path, 0) {
 				continue
 			}
-			key := identity(path)
+			key := canonical(path)
 			counts[key]++ // Count unsupported/hidden systems too: ES launch searches all real systems.
 			if !supported || key == ownLauncher || !filepath.IsAbs(path) || !exists(path) || liveGame.flag("hidden") {
 				continue
@@ -245,7 +258,7 @@ func Discover(ctx context.Context, loc Locations, fetch Fetch) (Library, error) 
 	}
 	unique := result.Games[:0]
 	for _, game := range result.Games {
-		if counts[identity(game.Path)] == 1 {
+		if counts[canonical(game.Path)] == 1 {
 			unique = append(unique, game)
 		}
 	}
