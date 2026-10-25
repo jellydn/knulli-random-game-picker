@@ -4,6 +4,9 @@ import (
 	"errors"
 	"github.com/jellydn/knulli-random-game-picker/internal/library"
 	"github.com/jellydn/knulli-random-game-picker/internal/picker"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -66,5 +69,89 @@ func TestRevalidationRequiresSystemAndExactPath(t *testing.T) {
 	}
 	if err := picker.Revalidate(game, library.Library{Games: []library.Game{game}}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestLoadInvalidSettingsFallsBackWithoutPartialFilters(t *testing.T) {
+	for name, data := range map[string]string{
+		"syntax":     `{"system":"snes",`,
+		"field type": `{"system":"snes","favorites":"yes"}`,
+		"top-level":  `[]`,
+		"oversized":  `{"system":"snes"}` + strings.Repeat(" ", 32768),
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(data), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if got := picker.Load(dir); got != (picker.Filters{}) {
+				t.Fatalf("corrupt settings leaked partial filters: %+v", got)
+			}
+		})
+	}
+	if got := picker.Load(t.TempDir()); got != (picker.Filters{}) {
+		t.Fatalf("missing settings: %+v", got)
+	}
+	dir := t.TempDir()
+	valid := `{"system":"snes","favorites":true}`
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(valid+strings.Repeat(" ", 32768-len(valid))), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if got := picker.Load(dir); got != (picker.Filters{System: "snes", Favorites: true}) {
+		t.Fatalf("settings at exact size limit rejected: %+v", got)
+	}
+}
+
+func TestSaveFailuresPreserveSettingsAndAllowRecovery(t *testing.T) {
+	for _, failure := range []string{"write", "rename"} {
+		t.Run(failure, func(t *testing.T) {
+			dir := t.TempDir()
+			original := picker.Filters{System: "snes", Favorites: true}
+			if err := picker.Save(dir, original); err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(dir, "settings.json")
+			before, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			blocker := filepath.Join(dir, "settings.json.tmp")
+			if failure == "rename" {
+				// Preserve the old bytes in a directory to deterministically reject rename,
+				// even when the tests are run as root.
+				if err := os.Remove(path); err != nil {
+					t.Fatal(err)
+				}
+				blocker = path
+			}
+			if err := os.Mkdir(blocker, 0700); err != nil {
+				t.Fatal(err)
+			}
+			if failure == "rename" {
+				if err := os.WriteFile(filepath.Join(path, "preserved"), before, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			updated := picker.Filters{System: "日本語 / exact", Favorites: false}
+			if err := picker.Save(dir, updated); err == nil {
+				t.Fatal("save reported success despite blocked replacement")
+			}
+			checkPath := path
+			if failure == "rename" {
+				checkPath = filepath.Join(path, "preserved")
+			}
+			if after, err := os.ReadFile(checkPath); err != nil || string(after) != string(before) {
+				t.Fatalf("failed save altered existing bytes: %q, %v", after, err)
+			}
+			if err := os.RemoveAll(blocker); err != nil {
+				t.Fatal(err)
+			}
+			if err := picker.Save(dir, updated); err != nil {
+				t.Fatal(err)
+			}
+			if got := picker.Load(dir); got != updated {
+				t.Fatalf("save did not recover: %+v", got)
+			}
+		})
 	}
 }

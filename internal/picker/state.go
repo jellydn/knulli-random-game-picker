@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/jellydn/knulli-random-game-picker/internal/library"
+	"io"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -160,10 +161,14 @@ func Revalidate(game library.Game, fresh library.Library) error {
 func Load(dir string) Filters {
 	var filters Filters
 	path := filepath.Join(dir, "settings.json")
-	if stat, err := os.Stat(path); err == nil && stat.Size() <= 32768 {
-		if data, err := os.ReadFile(path); err == nil {
-			_ = json.Unmarshal(data, &filters)
-		}
+	f, err := os.Open(path)
+	if err != nil {
+		return filters
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, 32769))
+	if err != nil || len(data) > 32768 || json.Unmarshal(data, &filters) != nil {
+		return Filters{}
 	}
 	return filters
 }
