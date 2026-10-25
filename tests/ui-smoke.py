@@ -27,11 +27,11 @@ scan_allowed = threading.Event()
 scan_allowed.set()
 
 
-def png(path):
+def png(path, width=160, height=200):
     def chunk(kind, data):
         return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', binascii.crc32(kind + data))
-    pixels = b''.join(b'\0' + bytes([36, 130 + y // 3, 115]) * 160 for y in range(200))
-    path.write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 160, 200, 8, 2, 0, 0, 0)) +
+    pixels = b''.join(b'\0' + bytes([36, 130 + y // 3, 115]) * width for y in range(height))
+    path.write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)) +
                      chunk(b'IDAT', zlib.compress(pixels)) + chunk(b'IEND', b''))
 
 
@@ -146,18 +146,22 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
         fifo = root / 'controller-input'
         os.mkfifo(fifo)
         with os.fdopen(os.open(fifo, os.O_RDWR | os.O_NONBLOCK), 'wb', buffering=0) as buttons:
-            for layout, a, b, x, y in [('knulli', 1, 0, 3, 2), ('xbox', 0, 1, 2, 3)]:
+            for layout, a, b, x, y, size in [
+                (*mapping, size)
+                for size in ('1280x720', '640x480')
+                for mapping in [('knulli', 1, 0, 3, 2), ('xbox', 0, 1, 2, 3)]
+            ]:
                 controller_environment = dict(environment, PICKER_CONTROLLER_LAYOUT=layout,
                                               PICKER_TEST_INPUT_FIFO=str(fifo),
                                               LD_PRELOAD=str(binary.parent / 'libcontroller-events.so'))
                 before_launch, before_reads = len(requests), len(reads)
-                process = subprocess.Popen([str(binary), '--windowed', '--size', '1280x720', '--es-config', str(config)], env=controller_environment)
+                process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=controller_environment)
                 window = wait_window()
                 wait_reads(before_reads + 2)
                 def pad(button):
                     buttons.write(bytes([button]))
                     time.sleep(0.2)
-                capture(window, f'{layout}-startup', '1280x720')
+                capture(window, f'{layout}-startup', size)
                 assert len(requests) == before_launch, 'Startup must not launch automatically'
                 pad(a)  # The first A after startup plays the automatically selected game.
                 assert process.wait(timeout=5) == 0, f'{layout}: startup requires another selection step'
@@ -165,7 +169,7 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
                 assert requests[-1] == ('/launch', str(rom).encode(), 1)
 
                 before_launch, before_reads = len(requests), len(reads)
-                process = subprocess.Popen([str(binary), '--windowed', '--size', '1280x720', '--es-config', str(config)], env=controller_environment)
+                process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=controller_environment)
                 wait_window()
                 wait_reads(before_reads + 2)
                 pad(x)  # ES X rerolls without requesting a rescan.
@@ -182,12 +186,12 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
                 assert process.wait(timeout=5) == 0 and len(requests) == before_launch
 
                 before_reads = len(reads)
-                process = subprocess.Popen([str(binary), '--windowed', '--size', '1280x720', '--es-config', str(config)], env=controller_environment)
+                process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=controller_environment)
                 wait_window()
                 wait_reads(before_reads + 2)
                 pad(6)  # SDL Start remains a global quit, including the new startup view.
                 assert process.wait(timeout=5) == 0 and len(requests) == before_launch
-                print(f'PASS: {layout}: startup A plays once, Y settings/rescan, X reroll, B back/quit, Start quit')
+                print(f'PASS: {layout} {size}: startup A plays once, Y settings/rescan, X reroll, B back/quit, Start quit')
         requests.clear()
         for size in ('1280x720', '640x480'):
             image = roms / 'art.png'
@@ -207,6 +211,17 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             image.write_bytes(b'not a valid image')
             key(window, 'x')
             capture(window, 'fallback', size)
+            png(image, width=2049, height=1)
+            key(window, 'x')
+            capture(window, 'oversized-dimensions', size)
+            image.write_bytes(original_art + b'\0' * ((8 << 20) + 1 - len(original_art)))
+            key(window, 'x')
+            capture(window, 'oversized-bytes', size)
+            for rejected in ('oversized-dimensions', 'oversized-bytes'):
+                comparison = subprocess.run(['compare', '-metric', 'AE',
+                    str(captures / f'fallback-{size}.png'),
+                    str(captures / f'{rejected}-{size}.png'), 'null:'], capture_output=True)
+                assert comparison.returncode == 0, f'{rejected} did not use the artwork fallback: {comparison.stderr}'
             image.write_bytes(original_art)
             for _ in range(100):
                 key(window, 'x')
