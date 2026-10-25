@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")"
+pushd "$root" >/dev/null
+export PATH="/usr/local/go/bin:$PATH"
+export GOFLAGS='-tags=nodefaultfont,nonextuifonts'
+
+bash -n .agents/setup scripts/lint scripts/check scripts/build-device scripts/package-device
+sh -n packaging/RandomGamePicker.sh
+shellcheck .agents/setup scripts/lint scripts/check scripts/build-device scripts/package-device packaging/RandomGamePicker.sh
+/usr/bin/python3 scripts/check-docs.py
+go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/*.yml
+
+unformatted="$(gofmt -l cmd internal tests/http-client)"
+if [[ -n "$unformatted" ]]; then
+  printf 'Run gofmt on:\n%s\n' "$unformatted" >&2
+  exit 1
+fi
+go mod verify
+go vet ./...
+echo 'PASS: Go format/modules/vet, ShellCheck, actionlint and document checks.'
+popd >/dev/null

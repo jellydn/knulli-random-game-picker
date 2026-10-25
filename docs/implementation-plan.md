@@ -17,7 +17,8 @@ the historical PRD traceability record, not a claim that all its milestones ship
    and focus. Inspect 640×480 and 1280×720 renders and keyboard interactions.
 4. Replace CMake with pinned Go/cgo host and AArch64 builds. Check Go format,
    vet, race tests, SDL fixture tests, ELF dependencies and GLIBC versions.
-   Keep this as unreleased source; require device retesting before publication.
+   TSP development-build evidence was accepted for the 0.2.0 release. Keep the
+   remaining hardware limitations explicit; do not claim the full MVP gates.
 
 See [Go architecture and research](go-rewrite.md) for the new boundaries and sources.
 

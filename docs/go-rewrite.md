@@ -55,16 +55,51 @@ on the UI thread and cannot navigate away from settings.
 
 ## Delivery and rollout
 
-The Go rewrite is published as
-[v0.2.0](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0).
-This checkout still identifies itself as `0.2.0-dev`, and its release trigger
-targets only the historical `v0.1.1` tag. Local builds must not be presented as
-the published asset. A future release needs a separate reviewed version/trigger
-change. Go/cgo adds a firmware-provided SDL2_gfx dependency. No firmware libraries
-are bundled or overwritten. Earlier release assets are unchanged.
+The source identifies itself as `0.2.0`; it does not replace `0.1.1` assets.
+The owner accepted the TSP development-build evidence and approved this release.
+The `v0.2.0` tag runs host/device gates before publishing the exact built package.
+Go/cgo adds a firmware-provided SDL2_gfx dependency. No firmware libraries are
+bundled or overwritten. See [release notes](release-0.2.0.md) for evidence and limits.
 
-See the [device guide](testing.md) for the limited TSP development-build evidence
-and the remaining tests: physical buttons, normal launch/return, emulator
-overrides, saves/history, and cold-start performance on each handheld. MagicX
-remains unverified. Rollback means reinstalling the complete published 0.1.1
-archive, preserving `state`.
+The owner must retest on each handheld: physical buttons, boot/quit, real launch
+and return, configured emulator overrides, saves/history, and cold-start performance.
+Rollback means reinstalling the complete published 0.1.1 archive, preserving `state`.
+
+## App Store asset contract
+
+The Store entry is `catalogue/packages/io.github.jellydn.random-game-picker.json`
+in knulli-app-store. Update its published `0.1.1` contract only after verifying
+the public `v0.2.0` asset against that release's checksums and metadata. Never pin
+a local development ZIP or use a mutable `latest` download alias.
+
+The current package contract is:
+
+| Field | Go 0.2.0 release |
+|---|---|
+| Version / asset | `0.2.0` / `random-game-picker-0.2.0-knulli-aarch64.zip` |
+| Pinned URL | `https://github.com/jellydn/knulli-random-game-picker/releases/download/v0.2.0/random-game-picker-0.2.0-knulli-aarch64.zip` |
+| Archive | Flat ZIP, `strip_components=0`; no enclosing directory |
+| Files | `RandomGamePicker.sh`, `random-game-picker`, `assets/DejaVuSans.ttf`, `licenses/`, `LICENSE`, `README.md`, `THIRD_PARTY.md` |
+| Destination | `/userdata/roms/ports/RandomGamePicker` (standard Ports root only) |
+| Executables | `RandomGamePicker.sh`, `random-game-picker` |
+| Menu path | `./RandomGamePicker/RandomGamePicker.sh` (unchanged) |
+| Preserve | Entire `state/` directory on repair, update, uninstall and rollback |
+| State schema | `settings.json`: `system` string and `favorites` boolean, unchanged from 0.1.1; atomic `settings.json.tmp` |
+| Logs | Per-session `state/last-run.log`, plus new toolkit `state/ui.log` |
+| Runtime | Linux AArch64; glibc 2.34+; `/lib/ld-linux-aarch64.so.1`; system SDL2/image/ttf/**gfx** and libc |
+| Metadata | `artifact.json`, `SHA256SUMS.txt`, `archive-inventory.txt`, `abi.txt` from the exact packaged bytes |
+
+For historical device-test traceability, the development ZIP had SHA-256
+`2411cbae57f44897ef1e69cc212a480f7fd8f8c5c64fbf235ecb6f6ac72c2c6c`,
+3,278,165 compressed bytes and 7,878,650 installed regular-file bytes. Its highest
+required GLIBC symbol is **2.34**; SDL2_gfx is a dynamic dependency. These values
+describe that development artifact, not the stable release. The stable ZIP has
+fresh metadata from its exact bytes; do not reuse the development digest or sizes.
+
+The Store update must change version, pinned release/checksum/ABI URLs,
+SHA-256, both sizes, exact ELF-derived minimum glibc, dependency list (`sdl2-gfx`),
+license evidence (Go/module notices replace C++ runtime/header notices), warnings
+and device-test evidence together. Retain the existing destination, menu path,
+executables, network declaration and preserve rule. Store dependency detection
+must recognize firmware SDL2_gfx before offering installation. Use the published
+`artifact.json` and `SHA256SUMS.txt` under the same `v0.2.0` release URL prefix.

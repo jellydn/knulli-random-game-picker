@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version=0.2.0-dev
+version=0.2.0
 output=build/release
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
@@ -33,7 +33,7 @@ needed = re.findall(r'Shared library: \[([^]]+)\]', abi)
 allowed = {'libSDL2-2.0.so.0', 'libSDL2_image-2.0.so.0', 'libSDL2_ttf-2.0.so.0', 'libSDL2_gfx-1.0.so.0', 'libc.so.6', 'libm.so.6', 'ld-linux-aarch64.so.1', 'libpthread.so.0', 'libdl.so.2'}
 assert set(needed) <= allowed, needed
 floor = max(set(re.findall(r'Name: GLIBC_([0-9.]+)', abi)), key=lambda s: tuple(map(int, s.split('.'))))
-assert tuple(map(int, floor.split('.'))) <= (2, 36), floor
+assert tuple(map(int, floor.split('.'))) <= (2, 34), floor
 archive = output / f'random-game-picker-{version}-knulli-aarch64.zip'
 files = sorted(p for p in stage.rglob('*') if p.is_file())
 with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:

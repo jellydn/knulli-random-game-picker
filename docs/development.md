@@ -1,10 +1,6 @@
 # Development setup and CI
 
-The published release is [v0.2.0](https://github.com/jellydn/knulli-random-game-picker/releases/tag/v0.2.0),
-the Go/gabagool rewrite. This checkout still uses `0.2.0-dev` in the binary and
-package script, with a historical `v0.1.1` release trigger. Do not use that trigger
-to republish or replace assets. Host builds and fixture tests do not prove KNULLI
-compatibility; see the [device test guide](testing.md) and [Go architecture](go-rewrite.md).
+The source is the Go/gabagool rewrite released as 0.2.0. Host builds and fixture tests do not prove full handheld compatibility; see the [device test guide](testing.md) and [Go architecture](go-rewrite.md).
 
 ## Orb setup
 
@@ -19,14 +15,30 @@ No credentials, services, or environment-file changes are required for the host 
 
 ## Checks
 
-`scripts/check` is the shared local/CI command. It performs:
+`scripts/lint` is the fast local/CI command. `scripts/check` runs it before the
+race tests, host build and HTTP contracts. The checks include:
 
 - Bash syntax and ShellCheck checks.
 - Local Markdown file-link, whitespace, code-fence, and conflict-marker checks.
 - Required PRD acceptance, open-question, and milestone marker checks.
-- Workflow YAML parsing and full-commit action-pin checks. This is not a full GitHub Actions schema validator.
+- Workflow YAML parsing, full-commit action-pin checks and pinned actionlint v1.7.7.
 - Go format, module integrity, vet and race-enabled tests for discovery, filtering, uniform selection, state and input contracts.
 - A Go/cgo host build and real loopback HTTP transport with a fake ES server. The test-only C++ shim injects SDL events; the app has no C++ implementation.
+
+Both prek and pre-commit read `.pre-commit-config.yaml`. Install the hooks with
+`prek install` (or `pre-commit install --hook-type pre-commit --hook-type pre-push`).
+The pre-commit stage runs `scripts/lint`; pre-push runs the Go race tests with
+the same font build tags as CI. Run both stages before submitting changes:
+
+```sh
+prek run --all-files
+prek run --all-files --hook-stage pre-push
+```
+
+The hooks require Go, cgo/SDL2/image/ttf/gfx, ShellCheck and Python/PyYAML.
+The pinned actionlint tool is fetched through Go on first use. The complete
+`scripts/check` and SDL smoke suite use the Linux setup above; CMake, CTest and
+application C++ lint/build checks no longer apply. Keep the test-only SDL shim.
 
 For the SDL smoke test, install `xvfb`, `xdotool`, and `imagemagick`, then run:
 
@@ -47,9 +59,9 @@ For a desktop demo (launch and persistent writes disabled):
 ./build/host/random-game-picker --demo --windowed --size 640x480
 ```
 
-Keyboard controls: arrows, Enter (A), Escape (B), X (reroll), Y (settings from selector; rescan inside settings), F10 (quit). The demo also opens directly on a selected game, but never scans, launches or saves filters. `--es-config DIR` selects a custom ES user configuration directory for fixture testing. `PICKER_STATE_DIR` selects app-owned settings/log state. No CLI option accepts an emulator command. The Go binary prints `0.2.0-dev`; other firmware profiles are rejected.
+Keyboard controls: arrows, Enter (A), Escape (B), X (reroll), Y (settings from selector; rescan inside settings), F10 (quit). The demo also opens directly on a selected game, but never scans, launches or saves filters. `--es-config DIR` selects a custom ES user configuration directory for fixture testing. `PICKER_STATE_DIR` selects app-owned settings/log state. No CLI option accepts an emulator command. The Go binary prints `0.2.0`; other firmware profiles are rejected.
 
-Build an experimental AArch64 archive on Debian 12 with `./scripts/build-device`. This installs cross dependencies, builds Go with cgo/arm64, inspects dynamic dependencies and GLIBC symbols, and calls `scripts/package-device`. SDL2_gfx is now required in addition to SDL2/image/ttf. The dev ZIP, checksum, sizes, inventory, module licenses and ELF report go under `build/release`. It is not a published release or hardware compatibility proof.
+Build the AArch64 archive on Debian 12 with `./scripts/build-device`. This installs cross dependencies, builds Go with cgo/arm64, gates GLIBC at 2.34 or earlier, and calls `scripts/package-device`. SDL2_gfx is required in addition to SDL2/image/ttf. The ZIP, checksum, sizes, inventory, module licenses and ELF report go under `build/release`. A local rebuild is not automatically a published release or hardware compatibility proof.
 
 Both build scripts use `-tags=nodefaultfont,nonextuifonts` to omit unused gabagool
 fonts. The UI sets `FALLBACK_FONT` to the bundled DejaVu Sans before toolkit
@@ -61,9 +73,9 @@ initialization, so selector and settings share the same licensed font.
 
 This follows the [KNULLI App Store setup](https://github.com/jellydn/knulli-app-store/blob/main/.agents/setup) and [check workflow](https://github.com/jellydn/knulli-app-store/blob/main/.github/workflows/check.yml) patterns. Its [original setup/CI thread](https://ampcode.com/threads/T-01a0a370-234b-729a-9b63-3871aa36a52c) records the method: inspect the environment, add repeatable setup, use shared checks, and verify locally before delivery. Action commit pins match the inspected App Store workflows; Go/catalogue commands do not belong in the picker build.
 
-In this checkout, `.github/workflows/release.yml` triggers only for `v0.1.1`,
-after host and device jobs pass. The publication job uploads the device job's
-exact bytes without rebuilding. This historical workflow does not describe the
-published v0.2.0 release process. Do not replace published assets or move a
-published tag. A future release needs a reviewed version/trigger change.
-Stable release status does not close the full M0 hardware gates.
+`.github/workflows/release.yml` publishes only the approved `v0.2.0` tag after
+host/device jobs pass. The publication job verifies tag/version/asset identity
+and checksums, then uploads the device job's exact package without rebuilding.
+Only that job has write permission. It cannot publish under `v0.1.1`; earlier
+release assets and tags stay unchanged. Future versions need a separately
+reviewed version/tag and [App Store asset contract](go-rewrite.md#app-store-asset-contract).
