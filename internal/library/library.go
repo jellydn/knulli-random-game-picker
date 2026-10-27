@@ -19,6 +19,24 @@ type Game struct {
 	System, SystemLabel, Path, Title, Image string
 	Favorite                                bool
 }
+
+// IsApplication uses ES system identity, never a title, core or file extension.
+// Only path-only candidates need the confirmed KNULLI application roots.
+func (game Game) IsApplication() bool {
+	switch strings.ToLower(game.System) {
+	case "tools", "emulators":
+		return true
+	case "":
+		path := filepath.Clean(game.Path)
+		for _, root := range []string{"/userdata/roms/tools", "/userdata/roms/emulators"} {
+			if path == root || strings.HasPrefix(path, root+string(filepath.Separator)) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 type Library struct {
 	Games    []Game
 	Warnings []string
@@ -200,7 +218,8 @@ func Discover(ctx context.Context, loc Locations, fetch Fetch) (Library, error) 
 			}
 		}
 		root := resolve(config.Path, loc.Home, loc.Home)
-		supported := config.Path != "" && filepath.IsAbs(root) && id != "ports"
+		// Skip application gamelists, but still count live paths for ambiguity.
+		supported := config.Path != "" && filepath.IsAbs(root) && id != "ports" && !(Game{System: id}).IsApplication()
 		label := config.Label
 		if label == "" {
 			label = id
@@ -276,7 +295,7 @@ func Eligible(lib Library, system string, favorites bool, recent []string) []int
 	}
 	var pool []int
 	for i, game := range lib.Games {
-		if (system != "" && game.System != system) || (favorites && !game.Favorite) || excluded[game.Path] {
+		if game.IsApplication() || (system != "" && game.System != system) || (favorites && !game.Favorite) || excluded[game.Path] {
 			continue
 		}
 		pool = append(pool, i)

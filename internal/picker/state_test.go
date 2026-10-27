@@ -70,6 +70,16 @@ func TestRevalidationRequiresSystemAndExactPath(t *testing.T) {
 	if err := picker.Revalidate(game, library.Library{Games: []library.Game{game}}); err != nil {
 		t.Fatal(err)
 	}
+	for _, app := range []library.Game{
+		{System: "tools", Path: "/relocated/Grout.sh"},
+		{System: "emulators", Path: "/relocated/PPSSPP.sh"},
+		{Path: "/userdata/roms/tools/PlayTime/playtime.sh"},
+		{Path: "/userdata/roms/emulators/ScummVM.sh"},
+	} {
+		if err := picker.Revalidate(app, library.Library{Games: []library.Game{app}}); err == nil {
+			t.Fatalf("Accepted an application from stale candidates: %+v", app)
+		}
+	}
 }
 
 func TestLoadInvalidSettingsFallsBackWithoutPartialFilters(t *testing.T) {

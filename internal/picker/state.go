@@ -152,7 +152,7 @@ func (s *State) ConfirmSetting() {
 }
 func Revalidate(game library.Game, fresh library.Library) error {
 	for _, candidate := range fresh.Games {
-		if candidate.System == game.System && candidate.Path == game.Path {
+		if !candidate.IsApplication() && candidate.System == game.System && candidate.Path == game.Path {
 			return nil
 		}
 	}

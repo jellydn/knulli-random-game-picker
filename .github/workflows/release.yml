@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    tags: [v0.2.1]
+    tags: [v0.2.2]
 
 permissions:
   contents: read
@@ -66,4 +66,4 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           gh release create "$TAG" release/* --verify-tag --latest \
-            --title "Random Game Picker $TAG" --notes-file docs/release-0.2.1.md
+            --title "Random Game Picker $TAG" --notes-file docs/release-0.2.2.md

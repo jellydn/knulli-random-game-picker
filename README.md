@@ -2,7 +2,7 @@
 
 A Go and gabagool/v2 application that selects games from an existing KNULLI library. Target devices are the TrimUI Smart Pro and MagicX Zero 28.
 
-**Version `0.2.1`: Go/gabagool maintenance release, KNULLI only.** Uses the selected
+**Version `0.2.2`: application eligibility fix, KNULLI only.** Uses the selected
 centered-artwork console layout, gabagool settings, separate discovery/launcher,
 firmware/input profiles and typed picker state. No other CFW support is claimed.
 See [architecture and research](docs/go-rewrite.md) for scope and extension rules.
@@ -16,6 +16,12 @@ See the [0.2.0 release notes](docs/release-0.2.0.md) for evidence and limits.
 The existing `0.2.0` and earlier releases and their assets are unchanged.
 See the [0.2.1 release notes](docs/release-0.2.1.md) for this maintenance release;
 no new hardware validation is claimed.
+
+**New in `0.2.2`:** Tools and Emulators application systems are excluded by
+exact, case-insensitive system ID, not by game title or guessed ROM path.
+They still participate in duplicate launch-path checks. See the
+[0.2.2 release notes](docs/release-0.2.2.md) for inspected firmware metadata and
+verification scope. No new hardware validation is claimed.
 
 This release includes system/favorites filters, uniform random selection, preview of existing PNG/JPEG scraped artwork, reroll, session recent exclusion, controller navigation, and a single-submit ES launch handoff. It reads system configurations and gamelists, reconciles with the running ES catalogue, and never builds an emulator command or guesses a ROM directory.
 

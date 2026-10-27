@@ -37,10 +37,10 @@ class PackageDeviceTest(unittest.TestCase):
             result = subprocess.run([str(ROOT / "scripts/package-device")], cwd=root,
                                     env=env, text=True, capture_output=True)
             output = root / "build/release"
-            archive = output / "random-game-picker-0.2.1-knulli-aarch64.zip"
+            archive = output / "random-game-picker-0.2.2-knulli-aarch64.zip"
             if result.returncode == 0:
                 artifact = json.loads((output / "artifact.json").read_text())
-                self.assertEqual(artifact["version"], "0.2.1")
+                self.assertEqual(artifact["version"], "0.2.2")
                 self.assertEqual(artifact["minimum_glibc"], max(versions, key=lambda v: tuple(map(int, v.split('.')))))
                 self.assertEqual(artifact["sha256"], hashlib.sha256(archive.read_bytes()).hexdigest())
                 self.assertEqual((output / "build-info.txt").read_text(), "exact build inputs\n")

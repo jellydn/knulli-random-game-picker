@@ -9,6 +9,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -102,6 +103,101 @@ func TestDiscoveryContract(t *testing.T) {
 	}
 	if _, err := library.Discover(ctx, loc, canceledFetch); err != context.Canceled {
 		t.Fatalf("Canceled scan processed the catalogue: %v", err)
+	}
+}
+
+func TestDiscoveryExcludesApplicationSystems(t *testing.T) {
+	root := t.TempDir()
+	ids := []string{"snes", "tools", "Tools", "emulators", "Emulators", "ports"}
+	config := "<systemList>"
+	for _, id := range ids {
+		systemRoot := filepath.Join(root, id)
+		if err := os.Mkdir(systemRoot, 0700); err != nil {
+			t.Fatal(err)
+		}
+		if id != "snes" {
+			if err := os.WriteFile(filepath.Join(systemRoot, "gamelist.xml"), []byte("<invalid"), 0600); err != nil {
+				t.Fatal(err)
+			}
+		}
+		config += "<system><name>" + id + "</name><path>" + systemRoot + "</path></system>"
+	}
+	config += "</systemList>"
+	if err := os.WriteFile(filepath.Join(root, "es_systems.cfg"), []byte(config), 0600); err != nil {
+		t.Fatal(err)
+	}
+	names := []string{"game.sfc", "shared.sfc"}
+	for _, id := range ids[1:] {
+		names = append(names, id+"-PPSSPP.sh", id+"-ScummVM.sh")
+	}
+	for _, name := range names {
+		if err := os.WriteFile(filepath.Join(root, name), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fetch := func(_ context.Context, route string) ([]byte, error) {
+		if route == "/systems" {
+			var systems []map[string]any
+			for _, id := range ids {
+				systems = append(systems, map[string]any{"name": id, "gamesystem": true})
+			}
+			return json.Marshal(systems)
+		}
+		if route == "/systems/snes/games" {
+			return json.Marshal([]map[string]any{
+				{"path": filepath.Join(root, "game.sfc"), "name": "Tools and Emulators", "favorite": true},
+				{"path": filepath.Join(root, "shared.sfc"), "name": "Ambiguous game"},
+			})
+		}
+		id := strings.TrimSuffix(strings.TrimPrefix(route, "/systems/"), "/games")
+		return json.Marshal([]map[string]any{
+			{"path": filepath.Join(root, id+"-PPSSPP.sh"), "favorite": "true"},
+			{"path": filepath.Join(root, id+"-ScummVM.sh")},
+			{"path": filepath.Join(root, "shared.sfc"), "hidden": true},
+		})
+	}
+	lib, err := library.Discover(context.Background(), library.Locations{User: root}, fetch)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lib.Games) != 1 || lib.Games[0].Path != filepath.Join(root, "game.sfc") {
+		t.Fatalf("Only the unambiguous real game must survive discovery: %+v", lib)
+	}
+	if len(lib.Warnings) != 1 || !strings.Contains(lib.Warnings[0], "Ambiguous paths") {
+		t.Fatalf("Application gamelists must not be parsed: %v", lib.Warnings)
+	}
+	for _, id := range ids[1:] {
+		if pool := library.Eligible(lib, id, false, nil); len(pool) != 0 {
+			t.Fatalf("Application system %s remains eligible: %v", id, pool)
+		}
+	}
+	if pool := library.Eligible(lib, "", true, nil); len(pool) != 1 || lib.Games[pool[0]].Title != "Tools and Emulators" {
+		t.Fatalf("Favorites must retain the real game, not application entries: %v", pool)
+	}
+}
+
+func TestEligibleRejectsCachedApplications(t *testing.T) {
+	lib := library.Library{Games: []library.Game{
+		{System: "tools", Path: "/relocated/Grout.sh", Favorite: true},
+		{System: "emulators", Path: "/relocated/PPSSPP.sh", Favorite: true},
+		{Path: "/userdata/roms/tools/RetSend/RetSend.sh", Favorite: true},
+		{Path: "/userdata/roms/emulators/ScummVM.sh", Favorite: true},
+		{Path: "/userdata/roms/tools/../emulators/PPSSPP.sh", Favorite: true},
+		{Path: "/userdata/roms/toolshed/game.sh", Favorite: true},
+		{Path: "/userdata/roms/emulators-extra/game.sh", Favorite: true},
+		{System: "pc", Path: "/games/game.sh", Favorite: true},
+		{System: "sh", Path: "/games/another.sh", Favorite: true},
+		{System: "tool", Path: "/games/valid.sh", Favorite: true},
+		{System: "ports", Path: "/games/port.sh", Favorite: true},
+	}}
+	pool := library.Eligible(lib, "", true, nil)
+	if len(pool) != 6 {
+		t.Fatalf("Expected six real/path-boundary controls, got %v", pool)
+	}
+	for i, index := range pool {
+		if index != i+5 {
+			t.Fatalf("Wrong eligibility at %d: %v", i, pool)
+		}
 	}
 }
 
