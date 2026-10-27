@@ -20,7 +20,7 @@ jobs:
       - run: |
           sudo apt-get install -y --no-install-recommends xvfb xdotool imagemagick
           python3 tests/ui-smoke.py build/host/random-game-picker build/ui-smoke
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: ui-evidence
           path: build/ui-smoke/
@@ -34,7 +34,7 @@ jobs:
         with:
           persist-credentials: false
       - run: ./scripts/build-device
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: release-package
           path: build/release/
