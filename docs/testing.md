@@ -35,6 +35,23 @@ The launcher resolves its own directory, inherits KNULLI's SDL mappings, and wri
 
 ## Controls
 
+### Unreleased source — optional YOLO mode
+
+YOLO mode is off by default. Open Settings with Y, select the YOLO mode row,
+and press A or left/right to toggle it. Toggling does not pick or launch a game.
+Exit normally with B or Start to save it to `state/settings.json`; a completed
+launch also saves settings before submitting. Missing `yolo` keys in older
+files mean off. `PICKER_STATE_DIR` can override the state directory.
+
+With YOLO on, A on System picks a random eligible game, rechecks the live
+catalogue, closes SDL, and sends one exact-path launch request. There is no
+preview confirmation, cancel, or choose-another step. Later runs open Settings
+before picking so you can disable YOLO or change filters. With YOLO off, startup
+and picks retain the normal preview, A Play, X reroll, and B back behavior.
+Empty pools, failed discovery, stale games, and failed saves still block launch.
+Demo mode never launches or saves, even if you toggle YOLO in its settings.
+These source changes do not change published packages or prove device gameplay.
+
 ### Version `0.2.1` — selector-first flow retained from `0.1.1`
 
 After discovery, the selector shows a random game using your saved system and favorites filters. Startup does not launch a game. Press A once to play, X to reroll, or Y to open the existing settings/filters screen. If the library or filters have no eligible games, Play is unavailable; Y still opens settings so you can change filters or rescan.

@@ -50,8 +50,12 @@ It starts a temporary X display and fake ES server, exercises both sizes and 100
 
 The suite also blocks stale selections, rejects unknown firmware, and verifies
 that demo mode does not scan, submit or save filters. It captures long-title and
-missing-art states. With `ffmpeg` installed, set `PICKER_UI_RECORD` to an absolute
-`.webm` path to record the 640×480 selector-to-settings keyboard interaction.
+missing-art states. YOLO coverage toggles and saves the setting, reopens the app,
+checks a one-pick launch after fresh revalidation, blocks stale games and save
+failures, then disables YOLO and verifies persistence and normal preview/reroll/
+cancel/Play behavior. Both window sizes are covered. With `ffmpeg` installed,
+set `PICKER_UI_RECORD` to an absolute `.webm` path to record the 640×480
+selector-to-settings keyboard interaction and a sibling `yolo-toggle.webm` clip.
 
 For a desktop demo (launch and persistent writes disabled):
 

@@ -30,6 +30,7 @@ const (
 type Filters struct {
 	System    string `json:"system"`
 	Favorites bool   `json:"favorites"`
+	YOLO      bool   `json:"yolo,omitempty"`
 }
 type System struct{ ID, Label string }
 type State struct {
@@ -47,7 +48,12 @@ type State struct {
 }
 
 func New(filters Filters) *State {
-	return &State{Filters: filters, Selected: -1, RNG: rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))}
+	state := &State{Filters: filters, Selected: -1, RNG: rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))}
+	// Keep settings reachable before an automatic launch, including on later runs.
+	if filters.YOLO {
+		state.View = Settings
+	}
+	return state
 }
 func (s *State) Pool() []int {
 	var recent []string
@@ -138,6 +144,8 @@ func (s *State) Cycle(direction int) {
 		s.Filters.Favorites = !s.Filters.Favorites
 	} else if s.Focus == 2 {
 		s.ExcludeRecent = !s.ExcludeRecent
+	} else if s.Focus == 4 {
+		s.Filters.YOLO = !s.Filters.YOLO
 	} else {
 		s.Recent = nil
 		s.Notice = "Recent selections cleared"

@@ -75,6 +75,19 @@ func Run(ctx context.Context, options Options, state *picker.State, scan Scanner
 		pending = ch
 		go func() { lib, err := scan(ctx); ch <- scanResult{lib, err} }()
 	}
+	verify := func() {
+		if options.Demo || !options.Profile.CanLaunch {
+			state.Notice = "Launch disabled. No request was sent."
+			return
+		}
+		game := *state.Game()
+		verifying = &game
+		state.Operation = picker.Verifying
+		state.Notice = "Checking launch eligibility..."
+		ch := make(chan scanResult, 1)
+		pending = ch
+		go func() { lib, err := scan(ctx); ch <- scanResult{lib, err} }()
+	}
 	tick := func() {
 		if pending == nil {
 			return
@@ -113,6 +126,10 @@ func Run(ctx context.Context, options Options, state *picker.State, scan Scanner
 			return nil, err
 		}
 		tick()
+		if state.Filters.YOLO && state.View == picker.Selector && state.Operation == picker.Idle && state.Game() != nil && !options.Demo && options.Profile.CanLaunch {
+			verify()
+			dirty = true
+		}
 		if state.View == picker.Settings {
 			if err := showSettings(state, options.Profile.SwapFaceButtons, tick, startScan, options.Demo); err != nil {
 				return nil, err
@@ -155,17 +172,7 @@ func Run(ctx context.Context, options Options, state *picker.State, scan Scanner
 				canvas.resetArt()
 			}
 			if action == input.Confirm && state.Game() != nil {
-				if options.Demo || !options.Profile.CanLaunch {
-					state.Notice = "Launch disabled. No request was sent."
-					continue
-				}
-				game := *state.Game()
-				verifying = &game
-				state.Operation = picker.Verifying
-				state.Notice = "Checking launch eligibility..."
-				ch := make(chan scanResult, 1)
-				pending = ch
-				go func() { lib, err := scan(ctx); ch <- scanResult{lib, err} }()
+				verify()
 			}
 		}
 		if dirty {
@@ -191,7 +198,7 @@ func showSettings(state *picker.State, swap bool, tick, scan func(), demo bool) 
 	defer func() { gaba.SetInputMappingBytes(input.New(swap, false).JSON()); gaba.SetFlipFaceButtons(false) }()
 	window := gaba.GetWindow()
 	_ = window.Renderer.SetLogicalSize(window.GetWidth(), window.GetHeight())
-	items := make([]gaba.MenuItem, 4)
+	items := make([]gaba.MenuItem, 5)
 	update := func() {
 		label := "All Systems"
 		for _, system := range state.Systems() {
@@ -209,6 +216,7 @@ func showSettings(state *picker.State, swap bool, tick, scan func(), demo bool) 
 		items[1].Text = "Favorites only:  " + onoff(state.Filters.Favorites)
 		items[2].Text = "Exclude last 10 picks:  " + onoff(state.ExcludeRecent)
 		items[3].Text = "Reset recent selections"
+		items[4].Text = "YOLO mode:  " + onoff(state.Filters.YOLO)
 	}
 	update()
 	options := gaba.DefaultListOptions("Settings / Filters", items)

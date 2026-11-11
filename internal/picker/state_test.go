@@ -86,6 +86,7 @@ func TestLoadInvalidSettingsFallsBackWithoutPartialFilters(t *testing.T) {
 	for name, data := range map[string]string{
 		"syntax":     `{"system":"snes",`,
 		"field type": `{"system":"snes","favorites":"yes"}`,
+		"YOLO type":  `{"system":"snes","favorites":true,"yolo":"yes"}`,
 		"top-level":  `[]`,
 		"oversized":  `{"system":"snes"}` + strings.Repeat(" ", 32768),
 	} {
@@ -109,6 +110,36 @@ func TestLoadInvalidSettingsFallsBackWithoutPartialFilters(t *testing.T) {
 	}
 	if got := picker.Load(dir); got != (picker.Filters{System: "snes", Favorites: true}) {
 		t.Fatalf("settings at exact size limit rejected: %+v", got)
+	}
+}
+
+func TestYOLOTogglePersistsAndCanBeDisabledOnNextRun(t *testing.T) {
+	dir := t.TempDir()
+	state := picker.New(picker.Filters{System: "snes", Favorites: true})
+	if state.Filters.YOLO || state.View != picker.Selector {
+		t.Fatal("YOLO must be off by default")
+	}
+	state.View = picker.Settings
+	state.Focus = 4
+	state.ConfirmSetting()
+	if !state.Filters.YOLO || state.View != picker.Settings {
+		t.Fatal("Toggling YOLO must not pick a game")
+	}
+	if err := picker.Save(dir, state.Filters); err != nil {
+		t.Fatal(err)
+	}
+	reopened := picker.New(picker.Load(dir))
+	if reopened.Filters != state.Filters || reopened.View != picker.Settings {
+		t.Fatal("Saved YOLO must reopen settings so it can be disabled")
+	}
+	reopened.Focus = 4
+	reopened.Cycle(-1)
+	if err := picker.Save(dir, reopened.Filters); err != nil {
+		t.Fatal(err)
+	}
+	reopened = picker.New(picker.Load(dir))
+	if reopened.Filters.YOLO || reopened.Filters.System != "snes" || !reopened.Filters.Favorites || reopened.View != picker.Selector {
+		t.Fatal("Disabling YOLO must persist without changing filters")
 	}
 }
 

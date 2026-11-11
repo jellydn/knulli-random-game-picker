@@ -265,6 +265,101 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             assert len(requests) == (1 if size == '1280x720' else 2), requests
             print(f'PASS: {size}, scraped-art preview, 100 rerolls, filters, empty pool, SDL teardown before one launch')
 
+        for size in ('1280x720', '640x480'):
+            requests.clear()
+            settings = root / 'state/settings.json'
+            settings.unlink(missing_ok=True)
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 2)
+            key(window, 'y')
+            for _ in range(4):
+                key(window, 'Down')
+            capture(window, 'yolo-off', size)
+            if size == '640x480' and os.getenv('PICKER_UI_RECORD'):
+                recording = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'x11grab',
+                    '-video_size', size, '-framerate', '20', '-i', environment['DISPLAY'] + '.0',
+                    '-c:v', 'libvpx-vp9', '-crf', '35', '-b:v', '0',
+                    str(Path(os.environ['PICKER_UI_RECORD']).with_name('yolo-toggle.webm'))], stdin=subprocess.PIPE)
+                time.sleep(0.4)
+                for pointer_y in range(130, 355, 10):
+                    subprocess.run(['xdotool', 'mousemove', '--sync', '300', str(pointer_y)], env=environment, check=True)
+                    time.sleep(0.04)
+            key(window, 'Return')  # Enable without picking or launching.
+            capture(window, 'yolo-on', size)
+            assert process.poll() is None and not requests
+            if recording:
+                time.sleep(0.6)
+                recording.communicate(input=b'q', timeout=10)
+                assert recording.returncode == 0
+                recording = None
+            key(window, 'Escape')  # Exit saves the toggle to the existing file.
+            assert process.wait(timeout=5) == 0 and not requests
+            assert json.loads(settings.read_text()) == {'system': '', 'favorites': False, 'yolo': True}
+
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 2)
+            capture(window, 'yolo-reopened', size)
+            assert not requests, 'Saved YOLO must leave settings reachable before picking'
+            key(window, 'Return')  # One pick, no second confirmation or reroll screen.
+            assert process.wait(timeout=5) == 0
+            assert requests == [('/launch', str(rom).encode(), 1)]
+            assert len(reads) == before_reads + 4, 'YOLO must freshly revalidate before handoff'
+
+            # YOLO must not weaken stale-game or save-failure safety checks.
+            for failure in ('stale', 'save'):
+                requests.clear()
+                before_reads = len(reads)
+                process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+                window = wait_window()
+                wait_reads(before_reads + 2)
+                if failure == 'stale':
+                    library_available = False
+                else:
+                    (root / 'state/settings.json.tmp').mkdir()
+                key(window, 'Return')
+                if failure == 'stale':
+                    wait_reads(before_reads + 3)
+                    assert process.poll() is None and not requests
+                    key(window, 'F10')
+                    assert process.wait(timeout=5) == 0
+                    library_available = True
+                else:
+                    assert process.wait(timeout=5) == 1
+                    (root / 'state/settings.json.tmp').rmdir()
+                assert not requests, f'YOLO bypassed {failure} safety gate'
+
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 2)
+            for _ in range(4):
+                key(window, 'Down')
+            key(window, 'Left')  # Disable on a later run.
+            capture(window, 'yolo-disabled', size)
+            for _ in range(4):
+                key(window, 'Up')
+            key(window, 'Return')  # Normal preview remains cancellable and rerollable.
+            key(window, 'x')
+            assert process.poll() is None and not requests
+            assert len(reads) == before_reads + 2
+            key(window, 'Escape')
+            key(window, 'Escape')
+            assert process.wait(timeout=5) == 0 and not requests
+            assert not json.loads(settings.read_text()).get('yolo', False)
+            before_reads = len(reads)
+            process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
+            window = wait_window()
+            wait_reads(before_reads + 2)
+            assert process.poll() is None and not requests, 'Disabled YOLO did not persist'
+            key(window, 'Return')
+            assert process.wait(timeout=5) == 0
+            assert requests == [('/launch', str(rom).encode(), 1)]
+            print(f'PASS: {size}: YOLO toggle saved/reloaded; one-pick launch; stale/save failures blocked; disabled normal flow restored')
+
         # A game disappearing between preview and Play must never be submitted.
         # A long title must still leave platform/status/actions readable.
         fixture_title = 'The remarkably long adventures of a synthetic hero across a relocated library with more words than fit on a single line'
@@ -291,6 +386,15 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             time.sleep(0.4)
             key(window, 'Return')
             capture(window, 'demo-no-launch', size)
+            key(window, 'y')
+            for _ in range(4):
+                key(window, 'Down')
+            key(window, 'Return')  # YOLO cannot override demo launch/write restrictions.
+            for _ in range(4):
+                key(window, 'Up')
+            key(window, 'Return')
+            key(window, 'Return')
+            assert process.poll() is None and not requests and len(reads) == before_reads
             key(window, 'F10')
             assert process.wait(timeout=5) == 0 and not requests and len(reads) == before_reads
             assert (root / 'state/settings.json').read_bytes() == saved_bytes

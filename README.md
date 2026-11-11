@@ -25,6 +25,13 @@ verification scope. No new hardware validation is claimed.
 
 This release includes system/favorites filters, uniform random selection, preview of existing PNG/JPEG scraped artwork, reroll, session recent exclusion, controller navigation, and a single-submit ES launch handoff. It reads system configurations and gamelists, reconciles with the running ES catalogue, and never builds an emulator command or guesses a ROM directory.
 
+**Unreleased source: YOLO mode.** Open Settings with Y and toggle **YOLO mode**
+with A or left/right. Exit normally to save it in `state/settings.json`.
+When enabled, A on System picks and launches immediately after the safety check,
+without the preview, cancel, or reroll step. Later runs open Settings first so
+you can pick again or turn YOLO off. It is off by default; the normal selector
+flow is unchanged when disabled. Published releases are unchanged.
+
 **New in `0.1.1`:** the game selector opens after discovery, using saved filters. A plays the selected game; Y opens settings, where Y still rescans. Saved system selection is no longer reset before discovery. Earlier `0.1.0` opens filters first; its published assets remain unchanged.
 
 **New in `0.2.1`:** the selector redraws on events/results rather than on
@@ -34,7 +41,7 @@ GLIBC ≤2.34 even with Python optimization and records build input versions.
 The centered-artwork UI, both controller layouts and exact-path single-submit
 launch contract are unchanged. No public archive or tag was replaced.
 
-There is still no persistent library cache or Surprise Mode. Artwork decoding
+There is still no persistent library cache. Published `0.2.2` has no Surprise Mode. Artwork decoding
 is bounded but synchronous; host benchmarks do not prove device budgets.
 Remaining hands-on checks are tracked in [TSP controls/audio/return #6](https://github.com/jellydn/knulli-random-game-picker/issues/6),
 [overrides/second system #7](https://github.com/jellydn/knulli-random-game-picker/issues/7),
