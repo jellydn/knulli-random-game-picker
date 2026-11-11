@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   host:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Match the check workflow's host environment and keep every release gate.
     container: debian:bookworm
     timeout-minutes: 10
@@ -28,7 +28,7 @@ jobs:
           path: build/ui-smoke/
           if-no-files-found: error
   device:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     container: debian:bookworm
     timeout-minutes: 15
     steps:
@@ -43,7 +43,7 @@ jobs:
           if-no-files-found: error
   publish:
     needs: [host, device]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
     steps:
