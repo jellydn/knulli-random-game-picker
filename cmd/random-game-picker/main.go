@@ -39,7 +39,7 @@ func run() error {
 	firmwareID := flag.String("firmware", "knulli", "Firmware profile (KNULLI only)")
 	flag.Parse()
 	if *version {
-		fmt.Println("0.2.2")
+		fmt.Println("0.3.0")
 		return nil
 	}
 	profile, err := firmware.Resolve(*firmwareID)

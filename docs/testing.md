@@ -1,4 +1,4 @@
-# Installation and testing — 0.2.1
+# Installation and testing — 0.3.0
 
 ## Go/gabagool release
 
@@ -19,7 +19,7 @@ This build targets TrimUI Smart Pro (1280×720) and MagicX Zero 28 (640×480).
 It requires KNULLI, aarch64 glibc **2.34 or later**, and the firmware's SDL2,
 SDL2_image, SDL2_ttf and SDL2_gfx. The package does not replace system libraries.
 Older or missing dependencies must be blocked, not bypassed. See the
-[release notes](release-0.2.1.md) for exact test scope and remaining limits.
+[release notes](release-0.3.0.md) for exact test scope and remaining limits.
 
 Runtime reads ES system configurations, `gamelist.xml` artwork paths, and the running ES catalogue through local `127.0.0.1:1234` HTTP. The local API must be available while a Port runs. Public Web Access and Internet access are not required. No DNS, redirects, downloads, telemetry, accounts, or non-loopback endpoints are used. The App Store manifest declares network use because loopback sockets are still network API use.
 
@@ -35,7 +35,7 @@ The launcher resolves its own directory, inherits KNULLI's SDL mappings, and wri
 
 ## Controls
 
-### Unreleased source — optional YOLO mode
+### Version `0.3.0` — optional YOLO mode
 
 YOLO mode is off by default. Open Settings with Y, select the YOLO mode row,
 and press A or left/right to toggle it. Toggling does not pick or launch a game.
@@ -50,7 +50,7 @@ before picking so you can disable YOLO or change filters. With YOLO off, startup
 and picks retain the normal preview, A Play, X reroll, and B back behavior.
 Empty pools, failed discovery, stale games, and failed saves still block launch.
 Demo mode never launches or saves, even if you toggle YOLO in its settings.
-These source changes do not change published packages or prove device gameplay.
+These fixture checks do not prove device gameplay. Earlier packages are unchanged.
 
 ### Version `0.2.1` — selector-first flow retained from `0.1.1`
 

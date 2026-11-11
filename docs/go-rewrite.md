@@ -38,8 +38,10 @@ on the UI thread and cannot navigate away from settings.
 
 ## Safety and compatibility
 
-- Startup selects, never launches. Filters use the same `system`/`favorites` JSON
-  keys as 0.1.1. Recent exclusion remains optional and session-only, with no fallback.
+- With YOLO off, startup selects, never launches. Saved YOLO opens Settings first;
+  A on System picks and launches after fresh verification without preview confirmation.
+  Filters retain `system`/`favorites`; optional `yolo` defaults to false when absent.
+  Recent exclusion remains optional and session-only, with no fallback.
 - Configured ES roots and gamelist artwork are retained. Live ES favorites win.
   Ports, collections, hidden/missing games and duplicate launch paths are excluded.
 - Play rechecks the live catalogue and matches both system and exact path. All
@@ -55,12 +57,12 @@ on the UI thread and cannot navigate away from settings.
 
 ## Delivery and rollout
 
-The source identifies itself as `0.2.1`, a compatible maintenance release over
-0.2.0. The `v0.2.1` tag runs host/device gates before publishing the exact built
+The source identifies itself as `0.3.0`, adding optional persistent YOLO mode over
+0.2.2. The `v0.3.0` tag runs host/device gates before publishing the exact built
 package. Earlier releases, tags and assets remain unchanged. The limited TSP
-device evidence belongs to 0.2.0; no new hardware result is claimed for 0.2.1.
+device evidence belongs to earlier versions; no new hardware result is claimed for 0.3.0.
 Firmware-provided SDL2_gfx remains required. No firmware libraries are bundled
-or overwritten. See [release notes](release-0.2.1.md) for evidence and limits.
+or overwritten. See [release notes](release-0.3.0.md) for evidence and limits.
 
 The owner must retest on each handheld: physical buttons, boot/quit, real launch
 and return, configured emulator overrides, saves/history, and cold-start performance.
@@ -70,22 +72,22 @@ Rollback means reinstalling a complete prior archive, preserving `state`.
 
 The Store entry is `catalogue/packages/io.github.jellydn.random-game-picker.json`
 in knulli-app-store. Update its current contract only after independently verifying
-the public `v0.2.1` asset against that release's checksums and metadata. Never pin
+the public `v0.3.0` asset against that release's checksums and metadata. Never pin
 a local development ZIP or use a mutable `latest` download alias.
 
 The current package contract is:
 
-| Field | Go 0.2.1 release |
+| Field | Go 0.3.0 release |
 |---|---|
-| Version / asset | `0.2.1` / `random-game-picker-0.2.1-knulli-aarch64.zip` |
-| Pinned URL | `https://github.com/jellydn/knulli-random-game-picker/releases/download/v0.2.1/random-game-picker-0.2.1-knulli-aarch64.zip` |
+| Version / asset | `0.3.0` / `random-game-picker-0.3.0-knulli-aarch64.zip` |
+| Pinned URL | `https://github.com/jellydn/knulli-random-game-picker/releases/download/v0.3.0/random-game-picker-0.3.0-knulli-aarch64.zip` |
 | Archive | Flat ZIP, `strip_components=0`; no enclosing directory |
 | Files | `RandomGamePicker.sh`, `random-game-picker`, `assets/DejaVuSans.ttf`, `licenses/`, `LICENSE`, `README.md`, `THIRD_PARTY.md` |
 | Destination | `/userdata/roms/ports/RandomGamePicker` (standard Ports root only) |
 | Executables | `RandomGamePicker.sh`, `random-game-picker` |
 | Menu path | `./RandomGamePicker/RandomGamePicker.sh` (unchanged) |
 | Preserve | Entire `state/` directory on repair, update, uninstall and rollback |
-| State schema | `settings.json`: `system` string and `favorites` boolean, unchanged from 0.1.1; atomic `settings.json.tmp` |
+| State schema | `settings.json`: `system` string, `favorites` boolean and optional `yolo` boolean (missing means false); atomic `settings.json.tmp` |
 | Logs | Per-session `state/last-run.log`, plus new toolkit `state/ui.log` |
 | Runtime | Linux AArch64; glibc 2.34+; `/lib/ld-linux-aarch64.so.1`; system SDL2/image/ttf/**gfx** and libc |
 | Metadata | `artifact.json`, `SHA256SUMS.txt`, `archive-inventory.txt`, `abi.txt` from the exact packaged bytes; `build-info.txt` for build provenance |
@@ -103,4 +105,4 @@ license evidence (Go/module notices replace C++ runtime/header notices), warning
 and device-test evidence together. Retain the existing destination, menu path,
 executables, network declaration and preserve rule. Store dependency detection
 must recognize firmware SDL2_gfx before offering installation. Use the published
-`artifact.json` and `SHA256SUMS.txt` under the same `v0.2.1` release URL prefix.
+`artifact.json` and `SHA256SUMS.txt` under the same `v0.3.0` release URL prefix.

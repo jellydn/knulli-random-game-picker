@@ -2,7 +2,7 @@
 
 A Go and gabagool/v2 application that selects games from an existing KNULLI library. Target devices are the TrimUI Smart Pro and MagicX Zero 28.
 
-**Version `0.2.2`: application eligibility fix, KNULLI only.** Uses the selected
+**Version `0.3.0`: optional persistent YOLO mode, KNULLI only.** Uses the selected
 centered-artwork console layout, gabagool settings, separate discovery/launcher,
 firmware/input profiles and typed picker state. No other CFW support is claimed.
 See [architecture and research](docs/go-rewrite.md) for scope and extension rules.
@@ -25,12 +25,14 @@ verification scope. No new hardware validation is claimed.
 
 This release includes system/favorites filters, uniform random selection, preview of existing PNG/JPEG scraped artwork, reroll, session recent exclusion, controller navigation, and a single-submit ES launch handoff. It reads system configurations and gamelists, reconciles with the running ES catalogue, and never builds an emulator command or guesses a ROM directory.
 
-**Unreleased source: YOLO mode.** Open Settings with Y and toggle **YOLO mode**
+**New in `0.3.0`: YOLO mode.** Open Settings with Y and toggle **YOLO mode**
 with A or left/right. Exit normally to save it in `state/settings.json`.
 When enabled, A on System picks and launches immediately after the safety check,
 without the preview, cancel, or reroll step. Later runs open Settings first so
 you can pick again or turn YOLO off. It is off by default; the normal selector
-flow is unchanged when disabled. Published releases are unchanged.
+flow is unchanged when disabled. See the [0.3.0 release notes](docs/release-0.3.0.md)
+for safety checks, upgrade instructions and verification limits. Earlier releases
+are unchanged.
 
 **New in `0.1.1`:** the game selector opens after discovery, using saved filters. A plays the selected game; Y opens settings, where Y still rescans. Saved system selection is no longer reset before discovery. Earlier `0.1.0` opens filters first; its published assets remain unchanged.
 
