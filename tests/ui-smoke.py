@@ -138,6 +138,20 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             time.sleep(0.05)
         raise AssertionError('UI capture remained blank')
 
+    def direct_using_ui_settings():
+        settings = root / 'state/settings.json'
+        saved_bytes = settings.read_bytes()
+        before_reads = len(reads)
+        requests.clear()
+        result = subprocess.run([str(binary), '--play-random', '--es-config', str(config)],
+                                env=dict(environment, DISPLAY='', SDL_VIDEODRIVER='no-ui-allowed'),
+                                capture_output=True, timeout=15)
+        assert result.returncode == 0, result.stderr
+        assert requests == [('/launch', str(rom).encode(), 1)]
+        assert len(reads) == before_reads + 4
+        assert settings.read_bytes() == saved_bytes, 'Direct launch changed UI settings'
+        requests.clear()
+
     try:
         unknown = subprocess.run([str(binary), '--firmware', 'unverified'], env=environment, capture_output=True)
         assert unknown.returncode == 1 and b'KNULLI only' in unknown.stderr
@@ -298,6 +312,7 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             assert process.wait(timeout=5) == 0 and not requests
             assert json.loads(settings.read_text()) == {'system': '', 'favorites': False, 'yolo': True}
 
+            direct_using_ui_settings()
             before_reads = len(reads)
             process = subprocess.Popen([str(binary), '--windowed', '--size', size, '--es-config', str(config)], env=environment)
             window = wait_window()
@@ -358,7 +373,9 @@ with tempfile.TemporaryDirectory(prefix='picker-ui-') as directory:
             key(window, 'Return')
             assert process.wait(timeout=5) == 0
             assert requests == [('/launch', str(rom).encode(), 1)]
+            direct_using_ui_settings()
             print(f'PASS: {size}: YOLO toggle saved/reloaded; one-pick launch; stale/save failures blocked; disabled normal flow restored')
+            print(f'PASS: {size}: UI-saved YOLO on/off settings shared with direct launch and preserved unchanged')
 
         # A game disappearing between preview and Play must never be submitted.
         # A long title must still leave platform/status/actions readable.

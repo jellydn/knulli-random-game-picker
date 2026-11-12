@@ -20,7 +20,7 @@ class PackageDeviceTest(unittest.TestCase):
             root = Path(temporary)
             for directory in ("build/aarch64/assets", "packaging", "docs", "bin"):
                 (root / directory).mkdir(parents=True)
-            for name in ("LICENSE", "THIRD_PARTY.md", "packaging/RandomGamePicker.sh", "docs/testing.md"):
+            for name in ("LICENSE", "THIRD_PARTY.md", "packaging/RandomGamePicker.sh", "packaging/Play Random Game.sh", "docs/testing.md"):
                 (root / name).write_text("package fixture\n")
             (root / "go.mod").write_text("module packaging.test\n\ngo 1.26.0\n")
             (root / "build/aarch64/random-game-picker").write_bytes(b"ELF fixture")
@@ -37,15 +37,18 @@ class PackageDeviceTest(unittest.TestCase):
             result = subprocess.run([str(ROOT / "scripts/package-device")], cwd=root,
                                     env=env, text=True, capture_output=True)
             output = root / "build/release"
-            archive = output / "random-game-picker-0.3.0-knulli-aarch64.zip"
+            archive = output / "random-game-picker-0.4.0-knulli-aarch64.zip"
             if result.returncode == 0:
                 artifact = json.loads((output / "artifact.json").read_text())
-                self.assertEqual(artifact["version"], "0.3.0")
+                self.assertEqual(artifact["version"], "0.4.0")
                 self.assertEqual(artifact["minimum_glibc"], max(versions, key=lambda v: tuple(map(int, v.split('.')))))
                 self.assertEqual(artifact["sha256"], hashlib.sha256(archive.read_bytes()).hexdigest())
                 self.assertEqual((output / "build-info.txt").read_text(), "exact build inputs\n")
                 with zipfile.ZipFile(archive) as package:
                     self.assertEqual(package.read("random-game-picker"), b"ELF fixture")
+                    for name in ("RandomGamePicker.sh", "Play Random Game.sh", "random-game-picker"):
+                        self.assertEqual((package.getinfo(name).external_attr >> 16) & 0o777, 0o755)
+                    self.assertFalse(any(name.startswith("state/") for name in package.namelist()))
             else:
                 self.assertFalse(archive.exists(), result.stdout + result.stderr)
             return result

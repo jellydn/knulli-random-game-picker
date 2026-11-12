@@ -195,6 +195,7 @@ func Discover(ctx context.Context, loc Locations, fetch Fetch) (Library, error) 
 	counts := map[string]int{}
 	executable, _ := os.Executable()
 	ownLauncher := canonical(filepath.Join(filepath.Dir(executable), "RandomGamePicker.sh"))
+	ownShortcut := canonical(filepath.Join(filepath.Dir(executable), "Play Random Game.sh"))
 	for _, liveSystem := range liveSystems {
 		if err := ctx.Err(); err != nil {
 			return result, err
@@ -251,7 +252,7 @@ func Discover(ctx context.Context, loc Locations, fetch Fetch) (Library, error) 
 			}
 			key := canonical(path)
 			counts[key]++ // Count unsupported/hidden systems too: ES launch searches all real systems.
-			if !supported || key == ownLauncher || !filepath.IsAbs(path) || !exists(path) || liveGame.flag("hidden") {
+			if !supported || key == ownLauncher || key == ownShortcut || !filepath.IsAbs(path) || !exists(path) || liveGame.flag("hidden") {
 				continue
 			}
 			node := meta[key]

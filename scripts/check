@@ -21,5 +21,6 @@ cp /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf build/host/assets/
 # shellcheck disable=SC2046
 c++ -shared -fPIC tests/controller-events.cpp $(pkg-config --cflags --libs sdl2) -ldl -o build/host/libcontroller-events.so
 python3 tests/http-contract.py "$temporary/http-client"
+python3 tests/direct-launch.py build/host/random-game-picker
 echo 'PASS: Go format, modules, vet, race tests, host build and loopback contract.'
 popd >/dev/null

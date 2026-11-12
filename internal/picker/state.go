@@ -167,18 +167,50 @@ func Revalidate(game library.Game, fresh library.Library) error {
 	return errors.New("Selected game is no longer launchable. Rescan from Settings")
 }
 func Load(dir string) Filters {
+	filters, _ := load(dir, false)
+	return filters
+}
+
+// LoadSaved requires explicit saved filters for launches without a settings UI.
+func LoadSaved(dir string) (Filters, error) {
+	return load(dir, true)
+}
+
+func load(dir string, requireSaved bool) (Filters, error) {
 	var filters Filters
 	path := filepath.Join(dir, "settings.json")
 	f, err := os.Open(path)
 	if err != nil {
-		return filters
+		return filters, err
 	}
 	defer f.Close()
 	data, err := io.ReadAll(io.LimitReader(f, 32769))
-	if err != nil || len(data) > 32768 || json.Unmarshal(data, &filters) != nil {
-		return Filters{}
+	if err != nil {
+		return Filters{}, err
 	}
-	return filters
+	if len(data) > 32768 {
+		return Filters{}, errors.New("Invalid saved settings")
+	}
+	if json.Unmarshal(data, &filters) != nil {
+		return Filters{}, errors.New("Invalid saved settings")
+	}
+	if !requireSaved {
+		return filters, nil
+	}
+	// Decode an object, not JSON null (which otherwise succeeds as zero filters).
+	var object map[string]json.RawMessage
+	if json.Unmarshal(data, &object) != nil || object == nil {
+		return Filters{}, errors.New("Invalid saved settings")
+	}
+	for _, key := range []string{"system", "favorites"} {
+		if value := object[key]; len(value) == 0 || string(value) == "null" {
+			return Filters{}, errors.New("Incomplete saved settings")
+		}
+	}
+	if value, ok := object["yolo"]; ok && string(value) == "null" {
+		return Filters{}, errors.New("Invalid saved settings")
+	}
+	return filters, nil
 }
 func Save(dir string, filters Filters) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {

@@ -1,6 +1,6 @@
 # Development setup and CI
 
-The source is the 0.3.0 YOLO mode release for the Go/gabagool picker. Host builds and fixture tests do not prove full handheld compatibility; see the [device test guide](testing.md) and [Go architecture](go-rewrite.md).
+The source is the 0.4.0 direct-launch shortcut release for the Go/gabagool picker. Host builds and fixture tests do not prove full handheld compatibility; see the [device test guide](testing.md) and [Go architecture](go-rewrite.md).
 
 ## Orb setup
 
@@ -63,7 +63,7 @@ For a desktop demo (launch and persistent writes disabled):
 ./build/host/random-game-picker --demo --windowed --size 640x480
 ```
 
-Keyboard controls: arrows, Enter (A), Escape (B), X (reroll), Y (settings from selector; rescan inside settings), F10 (quit). The demo also opens directly on a selected game, but never scans, launches or saves filters. `--es-config DIR` selects a custom ES user configuration directory for fixture testing. `PICKER_STATE_DIR` selects app-owned settings/log state. No CLI option accepts an emulator command. The Go binary prints `0.3.0`; other firmware profiles are rejected.
+Keyboard controls: arrows, Enter (A), Escape (B), X (reroll), Y (settings from selector; rescan inside settings), F10 (quit). The demo also opens directly on a selected game, but never scans, launches or saves filters. `--es-config DIR` selects a custom ES user configuration directory for fixture testing. `PICKER_STATE_DIR` selects app-owned settings/log state. No CLI option accepts an emulator command. The Go binary prints `0.4.0`; other firmware profiles are rejected.
 
 Build the AArch64 archive on Debian 12 with `./scripts/build-device`. This installs cross dependencies, builds Go with cgo/arm64, gates GLIBC at 2.34 or earlier, and calls `scripts/package-device`. SDL2_gfx is required in addition to SDL2/image/ttf. The ZIP, checksum, sizes, inventory, module licenses, ELF report and `build-info.txt` go under `build/release`. Build information records exact compiler/binutils, SDL, Debian package and Go module versions; it is provenance, not a pinned firmware sysroot or byte-reproducibility guarantee. A local rebuild is not automatically a published release or hardware compatibility proof.
 
@@ -72,6 +72,20 @@ the real packager with controlled ELF reports, including GLIBC 2.35/2.36/2.40
 rejection under normal and optimized Python. Production gates use explicit
 failures, not assertions that `PYTHONOPTIMIZE` can remove. HTTP fixtures also
 reject malformed framing, redirects and timeouts without retrying a POST.
+
+The `--play-random` path is checked by
+`python3 tests/direct-launch.py build/host/random-game-picker`, also part of
+`scripts/check`. It executes the real binary with no display and an invalid SDL
+video driver against fake ES. Cases cover both YOLO values, old settings,
+system/favorites filters, exact raw paths, two fresh scans, invalid settings,
+empty/excluded/stale games, lost favorites, discovery/save/launch failures and
+single submission without retries. Both actual shell entry points are checked
+for arguments, shared package-local state, replaced logs and error status in a
+directory with spaces. Package fixtures check both scripts' executable modes
+and absence of bundled state. The SDL suite also saves YOLO on/off through the
+real UI, runs direct launch with those settings, checks unchanged saved bytes,
+and reopens the normal app at both target sizes. No emulator or physical device is used. See
+[shortcut installation and Store integration](testing.md#play-random-game-shortcut).
 
 ### Performance audit
 
@@ -117,7 +131,7 @@ initialization, so selector and settings share the same licensed font.
 
 This follows the [KNULLI App Store setup](https://github.com/jellydn/knulli-app-store/blob/main/.agents/setup) and [check workflow](https://github.com/jellydn/knulli-app-store/blob/main/.github/workflows/check.yml) patterns. Its [original setup/CI thread](https://ampcode.com/threads/T-01a0a370-234b-729a-9b63-3871aa36a52c) records the method: inspect the environment, add repeatable setup, use shared checks, and verify locally before delivery. Action commit pins match the inspected App Store workflows; Go/catalogue commands do not belong in the picker build.
 
-`.github/workflows/release.yml` publishes only the approved `v0.3.0` tag after
+`.github/workflows/release.yml` publishes only the approved `v0.4.0` tag after
 host/device jobs pass. The publication job verifies tag/version/asset identity
 and checksums, then uploads the device job's exact package without rebuilding.
 Only that job has write permission. It cannot publish under prior tags; earlier

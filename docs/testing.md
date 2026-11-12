@@ -1,4 +1,4 @@
-# Installation and testing — 0.3.0
+# Installation and testing — 0.4.0
 
 ## Go/gabagool release
 
@@ -19,7 +19,7 @@ This build targets TrimUI Smart Pro (1280×720) and MagicX Zero 28 (640×480).
 It requires KNULLI, aarch64 glibc **2.34 or later**, and the firmware's SDL2,
 SDL2_image, SDL2_ttf and SDL2_gfx. The package does not replace system libraries.
 Older or missing dependencies must be blocked, not bypassed. See the
-[release notes](release-0.3.0.md) for exact test scope and remaining limits.
+[release notes](release-0.4.0.md) for exact test scope and remaining limits.
 
 Runtime reads ES system configurations, `gamelist.xml` artwork paths, and the running ES catalogue through local `127.0.0.1:1234` HTTP. The local API must be available while a Port runs. Public Web Access and Internet access are not required. No DNS, redirects, downloads, telemetry, accounts, or non-loopback endpoints are used. The App Store manifest declares network use because loopback sockets are still network API use.
 
@@ -32,6 +32,47 @@ Prefer the reviewed experimental App Store entry when available. Its first packa
 For manual installation, verify the ZIP against the release's `SHA256SUMS.txt`, create a `RandomGamePicker` directory **inside your configured Ports root**, and extract all archive contents there. Keep `RandomGamePicker.sh`, the binary, `assets/`, and licenses together. Ensure the launcher and binary are executable; refresh ES's game list if needed. Open **Random Game Picker** from Ports. Do not place ROMs in the package directory.
 
 The launcher resolves its own directory, inherits KNULLI's SDL mappings, and writes `state/settings.json`, its temporary replacement, `state/last-run.log` and `state/ui.log` below the package directory. The session log is replaced each run. Store repair/update/uninstall preserve `state`. ROMs, gamelists, scraped art, emulator settings, and saves are read-only to the picker. ES/emulators still perform their normal play-history/save writes when launched.
+
+### Play Random Game shortcut
+
+The source package now includes **Play Random Game.sh** beside
+`RandomGamePicker.sh`. Keep both scripts, the matching binary, assets and notices
+together. Update the complete package and preserve `state/`; do not copy the new
+script onto the published 0.3.0 binary, which does not support `--play-random`.
+Ensure both scripts and the binary are executable, then refresh the ES game
+list. The second script's filename supplies the **Play Random Game** label.
+If ES uses a gamelist-only view, it also needs a game entry at
+`./RandomGamePicker/Play Random Game.sh` in the configured Ports gamelist.
+Do not replace the existing Random Game Picker entry.
+
+Open **Random Game Picker**, set the system and favorites filter, and exit
+normally to save. **Play Random Game** then discovers the library, picks once
+using those saved filters, rechecks the selected game's exact system/path and
+favorite status, saves the unchanged settings values, and submits one launch
+request. It never opens SDL, artwork, or controller input. It works with YOLO
+on or off and does not toggle it. Recent exclusion is session-only, so it does
+not carry over to a shortcut run. The existing app's controls and startup are
+unchanged and remain available for settings and recovery.
+
+Missing, unreadable, malformed, incomplete or oversized settings block the
+shortcut. An absent YOLO key still means off. An unavailable saved system is
+not reset to All Systems. Empty/hidden/missing/ambiguous games, failed discovery,
+stale selections, lost favorite status and failed saves block submission.
+Errors return a nonzero status and are written to `state/last-run.log`; no
+error UI is opened. A failed/incomplete launch response is never retried.
+Inspect the log before another attempt: acceptance is not proof of gameplay.
+
+**Store upgrade:** use Store v2026.11.12 or later for two-entry ownership across
+Install, Update, Repair and Uninstall. The reviewed 0.4.0 package pin includes
+both executable scripts and preserves all of `state/`. Store v2026.11.11 still
+pins Picker 0.3.0 and knows only one menu entry. Update the Store first, or use
+the manual full-package path above. The picker never writes the Ports gamelist
+itself. Canonical Store source is `jellydn/knulli-app-store`; its divergent Amp
+mirror is not the release source.
+
+Host fixture verification does not prove firmware menu scanning, physical
+controls, gameplay, hotkey return or MagicX behavior. Test both menu entries on
+the exact future device package before release.
 
 ## Controls
 

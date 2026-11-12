@@ -2,7 +2,7 @@
 
 A Go and gabagool/v2 application that selects games from an existing KNULLI library. Target devices are the TrimUI Smart Pro and MagicX Zero 28.
 
-**Version `0.3.0`: optional persistent YOLO mode, KNULLI only.** Uses the selected
+**Version `0.4.0`: separate Play Random Game shortcut, KNULLI only.** Uses the selected
 centered-artwork console layout, gabagool settings, separate discovery/launcher,
 firmware/input profiles and typed picker state. No other CFW support is claimed.
 See [architecture and research](docs/go-rewrite.md) for scope and extension rules.
@@ -33,6 +33,14 @@ you can pick again or turn YOLO off. It is off by default; the normal selector
 flow is unchanged when disabled. See the [0.3.0 release notes](docs/release-0.3.0.md)
 for safety checks, upgrade instructions and verification limits. Earlier releases
 are unchanged.
+
+**New in `0.4.0`: Play Random Game shortcut.** The package adds a separate
+`Play Random Game.sh` Ports entry. It uses the system/favorites saved by the
+existing app and launches once without opening the picker UI, whether YOLO is
+on or off. Open **Random Game Picker** to change and save settings first.
+Missing/invalid settings or an unavailable saved system block launch; filters
+are never silently broadened. See [installation and update needs](docs/testing.md#play-random-game-shortcut).
+This is not included in the earlier 0.3.0 or Store v2026.11.11 assets.
 
 **New in `0.1.1`:** the game selector opens after discovery, using saved filters. A plays the selected game; Y opens settings, where Y still rescans. Saved system selection is no longer reset before discovery. Earlier `0.1.0` opens filters first; its published assets remain unchanged.
 

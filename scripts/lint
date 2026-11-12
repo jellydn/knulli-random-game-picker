@@ -8,7 +8,8 @@ export GOFLAGS='-tags=nodefaultfont,nonextuifonts'
 
 bash -n .agents/setup scripts/lint scripts/check scripts/build-device scripts/package-device
 sh -n packaging/RandomGamePicker.sh
-shellcheck .agents/setup scripts/lint scripts/check scripts/build-device scripts/package-device packaging/RandomGamePicker.sh
+sh -n 'packaging/Play Random Game.sh'
+shellcheck .agents/setup scripts/lint scripts/check scripts/build-device scripts/package-device packaging/*.sh
 /usr/bin/python3 scripts/check-docs.py
 go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/*.yml
 

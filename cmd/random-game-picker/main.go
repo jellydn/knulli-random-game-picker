@@ -31,6 +31,7 @@ func run() error {
 	}
 	assets := flag.String("assets", filepath.Join(filepath.Dir(executable), "assets"), "Bundled font directory")
 	demo := flag.Bool("demo", false, "Synthetic library, no launch or saved settings")
+	playRandom := flag.Bool("play-random", false, "Launch once using saved settings, without opening the UI")
 	windowed := flag.Bool("windowed", false, "Desktop window")
 	size := flag.String("size", "1280x720", "Window WIDTHxHEIGHT")
 	config := flag.String("es-config", "", "ES user configuration directory")
@@ -39,7 +40,7 @@ func run() error {
 	firmwareID := flag.String("firmware", "knulli", "Firmware profile (KNULLI only)")
 	flag.Parse()
 	if *version {
-		fmt.Println("0.3.0")
+		fmt.Println("0.4.0")
 		return nil
 	}
 	profile, err := firmware.Resolve(*firmwareID)
@@ -48,6 +49,12 @@ func run() error {
 	}
 	if *config != "" {
 		profile.Locations.User = *config
+	}
+	if *playRandom {
+		if *demo {
+			return fmt.Errorf("--play-random cannot be combined with --demo")
+		}
+		return playSaved(profile)
 	}
 	dimensions := strings.Split(*size, "x")
 	if len(dimensions) != 2 {
@@ -90,4 +97,40 @@ func run() error {
 		return launcher.Submit(context.Background(), game.Path)
 	}
 	return nil
+}
+
+func playSaved(profile firmware.Profile) error {
+	filters, err := picker.LoadSaved(profile.StateDir)
+	if err != nil {
+		return fmt.Errorf("Open Random Game Picker and save settings first: %w", err)
+	}
+	ctx := context.Background()
+	lib, err := library.Discover(ctx, profile.Locations, launcher.Fetch)
+	if err != nil {
+		return err
+	}
+	// Do not use State.Accept: its UI recovery can reset an unavailable system.
+	state := picker.New(filters)
+	state.Library = lib
+	if err := state.Roll(); err != nil {
+		return err
+	}
+	game := *state.Game()
+	fresh, err := library.Discover(ctx, profile.Locations, launcher.Fetch)
+	if err != nil {
+		return err
+	}
+	if err := picker.Revalidate(game, fresh); err != nil {
+		return err
+	}
+	for _, candidate := range fresh.Games {
+		if candidate.System == game.System && candidate.Path == game.Path && filters.Favorites && !candidate.Favorite {
+			return fmt.Errorf("Selected game is no longer a favorite")
+		}
+	}
+	if err := picker.Save(profile.StateDir, filters); err != nil {
+		return err
+	}
+	fmt.Println("No UI opened. Submitting one exact-path ES launch request; acceptance is not proof of play.")
+	return launcher.Submit(ctx, game.Path)
 }
