@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   host:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Avoid the runner's failing Ubuntu mirror; use the device gate's base.
     container: debian:bookworm
     timeout-minutes: 10
@@ -37,7 +37,7 @@ jobs:
           path: build/ui-smoke/
           if-no-files-found: error
   device:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     container: debian:bookworm
     timeout-minutes: 15
     steps:
