@@ -17,7 +17,7 @@ jobs:
   host:
     runs-on: ubuntu-24.04
     # Avoid the runner's failing Ubuntu mirror; use the device gate's base.
-    container: debian:bookworm
+    container: debian:trixie
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7; matches knulli-app-store
@@ -38,7 +38,7 @@ jobs:
           if-no-files-found: error
   device:
     runs-on: ubuntu-24.04
-    container: debian:bookworm
+    container: debian:trixie
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
